@@ -85,6 +85,12 @@ Update: `models.py` fixed (raises `PlayerAlreadyExistsException` / `PlayerDoesNo
 
 Step 3 essentially done (7 tests once `new_team_has_no_players` gets its `test_` prefix). Next: step 4, `storage.py`. Learner says aliasing now makes sense.
 
+JSON format decided: `{"name": "Falcons", "players": [{"id": 1, "name": "Sam", "position": "MF"}, {"id": 2, "name": "Na", "position": null}]}`. Players are an array of objects with named fields (matches `dataclasses.asdict`); missing position is written as `null`. Learner is writing `save` next.
+
+Update (step 4 in progress): models + tests committed (3125aec). First `save_team` draft exists, but learner moved `asdict` into `Team.add_player` (Team now stores dicts, `list_players` returns dicts) and edited `test_models.py` asserts to match. Pushed back: serialization belongs in storage.py, and tests shouldn't be changed to fit code. Still open in storage: hard-coded `storage_data.json` path (test writes a real file in repo root), `test_save_team` has no assert, `indent=True`, ruff errors.
+
+Update: fixed. `asdict` moved into `save_team` (list comprehension), path parameter added, model tests restored. Remaining: test passes `tmp_path` (the folder) instead of `path`, causing `IsADirectoryError`; test builds its expected value with the same `asdict` comprehension (mirrors the implementation, so write it by hand); unused `asdict` import and `__main__` block back in `models.py`; ruff errors. Then `load_team`.
+
 Open design questions:
 - What fields should a player have besides id and name?
 - Can one player belong to more than one team? (Affects project 2's database design.)
