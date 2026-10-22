@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 
 from app.database import Base, DbSession, engine
-from app.routers import drills
+from app.routers import drills, session_plans
 
 
 @asynccontextmanager
@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Practice Planner", lifespan=lifespan)
 app.include_router(drills.router)
+app.include_router(session_plans.router)
 
 
 @app.get("/health")
