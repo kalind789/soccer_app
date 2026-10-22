@@ -64,3 +64,10 @@ class SessionPlanRead(SessionPlanSummary):
     """The full version, used when showing one session plan."""
 
     notes: str
+    drills: list[DrillRead]
+
+
+class SessionDrillsUpdate(BaseModel):
+    """The full, ordered list of drill ids. It replaces the plan's current list."""
+
+    drill_ids: list[int]

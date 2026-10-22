@@ -2,8 +2,10 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.database import DbSession
-from app.models import InvalidSessionTimesError, SessionPlan
+from app.models import ArchivedDrillError, InvalidSessionTimesError, SessionPlan
+from app.routers.drills import get_drill_or_404
 from app.schemas import (
+    SessionDrillsUpdate,
     SessionPlanCreate,
     SessionPlanRead,
     SessionPlanSummary,
@@ -64,3 +66,15 @@ def update_plan(plan_id: int, data: SessionPlanUpdate, db: DbSession) -> Session
 def delete_plan(plan_id: int, db: DbSession) -> None:
     db.delete(get_plan_or_404(db, plan_id))
     db.commit()
+
+
+@router.put("/{plan_id}/drills")
+def set_plan_drills(plan_id: int, data: SessionDrillsUpdate, db: DbSession) -> SessionPlanRead:
+    plan = get_plan_or_404(db, plan_id)
+    drills = [get_drill_or_404(db, drill_id) for drill_id in data.drill_ids]
+    try:
+        plan.set_drills(drills)
+    except ArchivedDrillError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error))
+    db.commit()
+    return SessionPlanRead.model_validate(plan)

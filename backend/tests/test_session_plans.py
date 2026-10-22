@@ -79,3 +79,99 @@ def test_delete_plan(client):
 
     assert response.status_code == 204
     assert client.get(f"/session-plans/{plan['id']}").status_code == 404
+
+
+def create_drill(client, name):
+    return client.post("/drills", json={"name": name}).json()
+
+
+def set_drills(client, plan_id, drill_ids):
+    return client.put(f"/session-plans/{plan_id}/drills", json={"drill_ids": drill_ids})
+
+
+def test_new_plan_has_no_drills(client):
+    assert create_plan(client)["drills"] == []
+
+
+def test_set_drills_keeps_order(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    shooting = create_drill(client, "Shooting")
+
+    response = set_drills(client, plan["id"], [shooting["id"], rondo["id"]])
+
+    assert response.status_code == 200
+    assert [d["name"] for d in response.json()["drills"]] == ["Shooting", "Rondo"]
+    saved = client.get(f"/session-plans/{plan['id']}").json()
+    assert [d["name"] for d in saved["drills"]] == ["Shooting", "Rondo"]
+
+
+def test_set_drills_replaces_previous_list(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    shooting = create_drill(client, "Shooting")
+    set_drills(client, plan["id"], [rondo["id"], shooting["id"]])
+
+    response = set_drills(client, plan["id"], [shooting["id"]])
+
+    assert [d["name"] for d in response.json()["drills"]] == ["Shooting"]
+
+
+def test_set_drills_allows_repeats(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    shooting = create_drill(client, "Shooting")
+
+    response = set_drills(client, plan["id"], [rondo["id"], shooting["id"], rondo["id"]])
+
+    assert [d["name"] for d in response.json()["drills"]] == ["Rondo", "Shooting", "Rondo"]
+
+
+def test_set_drills_unknown_drill_returns_404(client):
+    plan = create_plan(client)
+
+    assert set_drills(client, plan["id"], [999]).status_code == 404
+
+
+def test_set_drills_rejects_newly_added_archived_drill(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    client.post(f"/drills/{rondo['id']}/archive")
+
+    response = set_drills(client, plan["id"], [rondo["id"]])
+
+    assert response.status_code == 422
+
+
+def test_archived_drill_already_in_plan_can_stay(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    shooting = create_drill(client, "Shooting")
+    set_drills(client, plan["id"], [rondo["id"]])
+    client.post(f"/drills/{rondo['id']}/archive")
+
+    response = set_drills(client, plan["id"], [rondo["id"], shooting["id"]])
+
+    assert response.status_code == 200
+    assert response.json()["drills"][0]["archived"] is True
+
+
+def test_editing_a_drill_shows_up_in_plans(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    set_drills(client, plan["id"], [rondo["id"]])
+
+    client.patch(f"/drills/{rondo['id']}", json={"name": "Rondo 5v2"})
+
+    saved = client.get(f"/session-plans/{plan['id']}").json()
+    assert saved["drills"][0]["name"] == "Rondo 5v2"
+
+
+def test_deleting_plan_keeps_its_drills(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    set_drills(client, plan["id"], [rondo["id"]])
+
+    client.delete(f"/session-plans/{plan['id']}")
+
+    assert client.get(f"/drills/{rondo['id']}").status_code == 200
