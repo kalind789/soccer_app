@@ -1,16 +1,25 @@
-from typing import Annotated
+from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import Base, DbSession, engine
+from app.routers import drills
 
-app = FastAPI(title="Practice Planner")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create any missing tables when the server starts. Alembic replaces this later.
+    Base.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(title="Practice Planner", lifespan=lifespan)
+app.include_router(drills.router)
 
 
 @app.get("/health")
-def health(db: Annotated[Session, Depends(get_db)]) -> dict[str, str]:
+def health(db: DbSession) -> dict[str, str]:
     db.execute(text("SELECT 1"))
     return {"status": "ok"}
 
