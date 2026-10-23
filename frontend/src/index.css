@@ -1,0 +1,30 @@
+:root {
+  --text: #1c2321;
+  --muted: #5f6b66;
+  --background: #f6f8f7;
+  --surface: #ffffff;
+  --border: #d8dfdc;
+  --accent: #1f7a4d;
+  --danger: #b3261e;
+
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}
