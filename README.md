@@ -44,8 +44,7 @@ Tests: `cd backend && uv run pytest`
 
 ## Roadmap
 
-- Drag-and-drop drill diagram editor (players, cones, pass/run/dribble arrows), saved as JSON so it stays editable
-- Postgres (Supabase) with login, teams, and email invites
+See [`tickets/`](tickets/README.md): drag-and-drop drill diagrams, users and authorization, team invites, and practice schedules with a calendar.
 
 ## Project layout
 

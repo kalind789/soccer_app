@@ -58,4 +58,4 @@ Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 42 tests
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 
-Next, in order: a drag-and-drop drill diagram editor (the user chose this over image uploads; store the diagram as JSON data so it stays editable, using common coaching symbols: solid arrow = pass, dashed = run, wavy = dribble), then Supabase Postgres with auth, teams and email invites.
+Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. Current work: a UI redesign in a "clean and bright" style (light, soft shadows, rounded cards, colorful accents).
