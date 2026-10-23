@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { listDrills, setPlanDrills, type Drill, type Plan } from '../api'
+import { createDrill, listDrills, setPlanDrills, type Drill, type DrillFields, type Plan } from '../api'
 import { formatMinutes } from '../format'
+import DrillForm from './DrillForm'
 
 // One row in the editor. `key` tells React which row is which, even when the same drill appears twice.
 // `minutes` is a string while the coach types, so the box can be empty for a moment.
@@ -23,6 +24,8 @@ function SlotEditor({ plan, onSaved }: Props) {
   const [library, setLibrary] = useState<Drill[]>([])
   const [newDrillId, setNewDrillId] = useState('')
   const [newMinutes, setNewMinutes] = useState('')
+  const [creating, setCreating] = useState(false) // Is the "new drill" form open?
+  const [createdMinutes, setCreatedMinutes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -61,6 +64,15 @@ function SlotEditor({ plan, onSaved }: Props) {
     setRows([...rows, { key: nextKey++, drill, minutes: newMinutes }])
     setNewDrillId('')
     setNewMinutes('')
+  }
+
+  // Save the drill to the library right away, then add it to this plan's draft list.
+  async function createAndAdd(fields: DrillFields) {
+    const drill = await createDrill(fields) // If this fails, DrillForm shows the error.
+    setLibrary([...library, drill].sort((a, b) => a.name.localeCompare(b.name)))
+    setRows([...rows, { key: nextKey++, drill, minutes: createdMinutes }])
+    setCreating(false)
+    setCreatedMinutes('')
   }
 
   async function save() {
@@ -157,8 +169,36 @@ function SlotEditor({ plan, onSaved }: Props) {
         <button type="submit" className="secondary">
           Add
         </button>
+        {!creating && (
+          <button type="button" className="secondary" onClick={() => setCreating(true)}>
+            + New drill
+          </button>
+        )}
       </form>
-      {library.length === 0 && <p className="muted">Your drill library is empty. Add drills there first.</p>}
+      {library.length === 0 && !creating && (
+        <p className="muted">Your drill library is empty. Use “New drill” to make one.</p>
+      )}
+
+      {creating && (
+        <div className="card nested">
+          <h3>New drill</h3>
+          <p className="muted">It's saved to your drill library, so you can reuse it in other sessions.</p>
+          <DrillForm submitLabel="Create and add to session" onSubmit={createAndAdd} onCancel={() => setCreating(false)}>
+            <label className="minutes">
+              <input
+                type="number"
+                min={1}
+                value={createdMinutes}
+                onChange={(e) => setCreatedMinutes(e.target.value)}
+                placeholder="15"
+                aria-label="Minutes in this session"
+                required
+              />
+              min in this session
+            </label>
+          </DrillForm>
+        </div>
+      )}
 
       {error && <p className="error">{error}</p>}
       {changed && (

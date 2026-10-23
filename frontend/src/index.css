@@ -404,3 +404,8 @@ button.icon {
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+.card.nested {
+  margin: 0;
+  background: var(--background);
+}

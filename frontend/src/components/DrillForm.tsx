@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import type { DrillFields } from '../api'
 
 const EMPTY: DrillFields = { name: '', objective: '', description: '' }
@@ -9,9 +9,10 @@ type Props = {
   // The parent decides what saving means (create or update). If it throws, the form shows the error.
   onSubmit: (fields: DrillFields) => Promise<void>
   onCancel?: () => void
+  children?: ReactNode // Extra fields to show below the drill's own, like minutes on the plan page.
 }
 
-function DrillForm({ initial = EMPTY, submitLabel, onSubmit, onCancel }: Props) {
+function DrillForm({ initial = EMPTY, submitLabel, onSubmit, onCancel, children }: Props) {
   // One state object for all fields, instead of one useState per field.
   const [fields, setFields] = useState(initial)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +59,7 @@ function DrillForm({ initial = EMPTY, submitLabel, onSubmit, onCancel }: Props) 
           placeholder="Setup, rules, progressions, coaching points"
         />
       </label>
+      {children}
       {error && <p className="error">{error}</p>}
       <div className="row">
         <button type="submit" disabled={saving}>

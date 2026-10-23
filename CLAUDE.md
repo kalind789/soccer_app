@@ -27,7 +27,7 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 - `src/api.ts`: the only place that calls the backend. Its types mirror the Pydantic schemas in `backend/app/schemas.py`, so keep them in sync by hand. `VITE_API_URL` overrides the API address (default `http://127.0.0.1:8000`).
 - `src/App.tsx`: header nav and React Router routes: `/plans`, `/plans/:planId`, `/drills` (`/` redirects to `/plans`).
 - `src/pages/`: one file per route. `PlansPage` (list + create), `PlanPage` (details, edit, delete, drills), `DrillsPage` (search, archive, create, edit).
-- `src/components/`: `DrillForm` and `PlanForm` (each used for both create and edit), `SlotEditor` (a plan's drills: minutes, reorder, remove, add; edits a draft until Save).
+- `src/components/`: `DrillForm` and `PlanForm` (each used for both create and edit), `SlotEditor` (a plan's drills: minutes, reorder, remove, add, or create a new library drill inline; edits a draft until Save).
 - `src/format.ts`: date, time and minutes display helpers.
 - `src/index.css`: all styles; colors are CSS variables on `:root`, redefined for dark mode.
 - The UI labels drill `objective` and plan `focus` as "Goal". The user chose to keep the field names and only relabel them.
