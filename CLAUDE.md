@@ -25,15 +25,20 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 ## Frontend layout
 
 - `src/api.ts`: the only place that calls the backend. Its types mirror the Pydantic schemas in `backend/app/schemas.py`, so keep them in sync by hand. `VITE_API_URL` overrides the API address (default `http://127.0.0.1:8000`).
-- `src/DrillLibrary.tsx`: drill list with search, show-archived toggle, archive/unarchive. `src/NewDrillForm.tsx`: create form.
-- `src/index.css`: all styles; colors are CSS variables on `:root`.
+- `src/App.tsx`: header nav and React Router routes: `/plans`, `/plans/:planId`, `/drills` (`/` redirects to `/plans`).
+- `src/pages/`: one file per route. `PlansPage` (list + create), `PlanPage` (details, edit, delete, drills), `DrillsPage` (search, archive, create, edit).
+- `src/components/`: `DrillForm` and `PlanForm` (each used for both create and edit), `SlotEditor` (a plan's drills: minutes, reorder, remove, add; edits a draft until Save).
+- `src/format.ts`: date, time and minutes display helpers.
+- `src/index.css`: all styles; colors are CSS variables on `:root`, redefined for dark mode.
+- The UI labels drill `objective` and plan `focus` as "Goal". The user chose to keep the field names and only relabel them.
 - The backend's CORS allows only `FRONTEND_ORIGIN` (default `http://localhost:5173`), so open the app at `localhost`, not `127.0.0.1`.
 
 ## Domain rules
 
 - Drills are archived, never deleted. Archived drills are hidden from `GET /drills` unless `?include_archived=true`. Editing a drill changes it in every plan that uses it.
 - A session plan's `end_time` must be after `start_time`. `duration_minutes` is calculated, never stored.
-- `PUT /session-plans/{id}/drills` replaces the ordered list. An archived drill can't be newly added, but one already in the plan can stay.
+- `PUT /session-plans/{id}/drills` replaces the ordered list with `{drill_id, minutes}` entries. An archived drill can't be newly added, but one already in the plan can stay.
+- Minutes belong to the slot (`SessionDrill.minutes`), never to the drill: the same drill can run 15 min in one plan and 20 in another. Minutes must be > 0, with no upper limit. `planned_minutes` (sum of slots) may differ from `duration_minutes`; the UI warns when over but never blocks.
 
 ## Commands
 
@@ -49,6 +54,8 @@ Backend (from `backend/`):
 
 ## Current status
 
-Backend v1 is done (steps 1 to 5), plus drill name search (`GET /drills?search=`), Alembic migrations and CORS, with 38 tests passing. Frontend has the drill library page only.
+Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 42 tests passing. Frontend: session plans and drill library pages, with editing. No frontend tests yet.
 
-Next, in order: frontend session plans pages (needs page routing), then a drag-and-drop drill diagram editor (the user chose this over image uploads; store the diagram as JSON data so it stays editable, using common coaching symbols: solid arrow = pass, dashed = run, wavy = dribble), then Supabase Postgres with auth, teams and email invites.
+The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
+
+Next, in order: a drag-and-drop drill diagram editor (the user chose this over image uploads; store the diagram as JSON data so it stays editable, using common coaching symbols: solid arrow = pass, dashed = run, wavy = dribble), then Supabase Postgres with auth, teams and email invites.
