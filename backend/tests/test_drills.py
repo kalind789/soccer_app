@@ -71,6 +71,33 @@ def test_archived_drill_hidden_from_list_by_default(client):
     assert len(client.get("/drills", params={"include_archived": True}).json()) == 1
 
 
+def test_search_drills_by_name(client):
+    create_drill(client, name="Rondo 4v1")
+    create_drill(client, name="Shooting")
+
+    response = client.get("/drills", params={"search": "rondo"})
+
+    names = [drill["name"] for drill in response.json()]
+    assert names == ["Rondo 4v1"]
+
+
+def test_search_drills_ignores_case(client):
+    create_drill(client, name="Rondo 4v1")
+
+    response = client.get("/drills", params={"search": "RONDO"})
+
+    assert len(response.json()) == 1
+
+
+def test_search_drills_respects_include_archived(client):
+    drill = create_drill(client, name="Rondo 4v1")
+    client.post(f"/drills/{drill['id']}/archive")
+
+    assert client.get("/drills", params={"search": "rondo"}).json() == []
+    response = client.get("/drills", params={"search": "rondo", "include_archived": True})
+    assert len(response.json()) == 1
+
+
 def test_unarchive_drill(client):
     drill = create_drill(client)
     client.post(f"/drills/{drill['id']}/archive")

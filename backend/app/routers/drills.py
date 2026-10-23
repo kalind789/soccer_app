@@ -25,12 +25,15 @@ def create_drill(data: DrillCreate, db: DbSession) -> DrillRead:
 
 
 @router.get("")
-def list_drills(db: DbSession, include_archived: bool = False) -> list[DrillRead]:
+def list_drills(
+    db: DbSession, include_archived: bool = False, search: str | None = None
+) -> list[DrillRead]:
     query = select(Drill).order_by(Drill.name)
     if not include_archived:
         query = query.where(Drill.archived.is_(False))
+    if search is not None:
+        query = query.where(Drill.name.ilike(f"%{search}%"))
     return [DrillRead.model_validate(drill) for drill in db.scalars(query)]
-
 
 @router.get("/{drill_id}")
 def get_drill(drill_id: int, db: DbSession) -> DrillRead:
