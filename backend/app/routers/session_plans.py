@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.database import DbSession
 from app.models import ArchivedDrillError, InvalidSessionTimesError, SessionPlan
@@ -42,7 +43,12 @@ def create_plan(data: SessionPlanCreate, db: DbSession) -> SessionPlanRead:
 
 @router.get("")
 def list_plans(db: DbSession) -> list[SessionPlanSummary]:
-    query = select(SessionPlan).order_by(SessionPlan.date, SessionPlan.start_time)
+    # Load every plan's slots in one extra query, instead of one query per plan (the "N+1" problem).
+    query = (
+        select(SessionPlan)
+        .options(selectinload(SessionPlan.slots))
+        .order_by(SessionPlan.date, SessionPlan.start_time)
+    )
     return [SessionPlanSummary.model_validate(plan) for plan in db.scalars(query)]
 
 

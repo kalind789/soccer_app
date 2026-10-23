@@ -66,6 +66,10 @@ class SessionPlan(Base):
         """Total drill time. It can be more or less than duration_minutes; the coach decides."""
         return sum(slot.minutes for slot in self.slots)
 
+    @property
+    def drill_count(self) -> int:
+        return len(self.slots)
+
     def set_drills(self, drills: list[tuple[Drill, int]]) -> None:
         """Replace the drill list with (drill, minutes) pairs.
 

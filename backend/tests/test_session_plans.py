@@ -239,3 +239,14 @@ def test_minutes_must_be_positive(client):
     rondo = create_drill(client, "Rondo")
 
     assert set_drills(client, plan["id"], [rondo["id"]], minutes=0).status_code == 422
+
+
+def test_plan_list_shows_progress(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    set_drills(client, plan["id"], [rondo["id"], rondo["id"]], minutes=15)
+
+    [summary] = client.get("/session-plans").json()
+
+    assert summary["drill_count"] == 2
+    assert summary["planned_minutes"] == 30

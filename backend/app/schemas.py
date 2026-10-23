@@ -59,6 +59,8 @@ class SessionPlanSummary(BaseModel):
     start_time: dt.time
     end_time: dt.time
     duration_minutes: int
+    planned_minutes: int
+    drill_count: int
 
 
 class SessionDrillRead(BaseModel):
@@ -76,7 +78,6 @@ class SessionPlanRead(SessionPlanSummary):
     notes: str
     # Named `slots` to match the model: the same drill can appear more than once.
     slots: list[SessionDrillRead]
-    planned_minutes: int
 
 
 class SessionDrillEntry(BaseModel):
