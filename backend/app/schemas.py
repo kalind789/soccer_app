@@ -31,20 +31,20 @@ class DrillRead(BaseModel):
 class SessionPlanCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     focus: str = Field(default="", max_length=200)
+    location: str = Field(default="", max_length=200)
     notes: str = ""
     date: dt.date
     start_time: dt.time
     end_time: dt.time
 
-
 class SessionPlanUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=100)
     focus: str | None = Field(default=None, max_length=200)
+    location: str | None = Field(default=None, max_length=200)
     notes: str | None = None
     date: dt.date | None = None
     start_time: dt.time | None = None
     end_time: dt.time | None = None
-
 
 class SessionPlanSummary(BaseModel):
     """The short version, used in lists."""
@@ -54,6 +54,7 @@ class SessionPlanSummary(BaseModel):
     id: int
     title: str
     focus: str
+    location: str
     date: dt.date
     start_time: dt.time
     end_time: dt.time

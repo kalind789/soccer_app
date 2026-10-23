@@ -40,6 +40,7 @@ class SessionPlan(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
     focus: Mapped[str] = mapped_column(String(200), default="")
+    location: Mapped[str] = mapped_column(String(200), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     date: Mapped[dt.date]
     start_time: Mapped[dt.time]

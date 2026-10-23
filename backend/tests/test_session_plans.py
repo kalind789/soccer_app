@@ -1,6 +1,7 @@
 PRESSING = {
     "title": "Pressing",
     "focus": "Win the ball back high",
+    "location": "field 3",
     "date": "2026-11-03",
     "start_time": "18:00",
     "end_time": "19:30",
@@ -21,6 +22,22 @@ def test_create_plan(client):
     assert plan["start_time"] == "18:00:00"
     assert plan["notes"] == ""
 
+
+
+def test_create_plan_saves_location(client):
+    plan = create_plan(client, location="Field 3")
+
+    assert plan["location"] == "Field 3"
+    assert client.get(f"/session-plans/{plan['id']}").json()["location"] == "Field 3"
+
+
+def test_location_defaults_to_empty(client):
+    without_location = {key: value for key, value in PRESSING.items() if key != "location"}
+
+    response = client.post("/session-plans", json=without_location)
+
+    assert response.status_code == 201
+    assert response.json()["location"] == ""
 
 def test_duration_is_calculated(client):
     plan = create_plan(client)
