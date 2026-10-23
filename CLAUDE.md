@@ -10,7 +10,7 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 - **Backend:** FastAPI + SQLAlchemy 2.0 + Pydantic, in `backend/`. Python >= 3.13, managed with uv. Tests use pytest. No linter.
 - **Frontend:** React, in `frontend/` (not created yet).
-- **Storage:** SQLite (`backend/planner.db`, gitignored). Set `DATABASE_URL` to change it. Tables are created at startup by `create_all`.
+- **Storage:** SQLite (`backend/planner.db`, gitignored). Set `DATABASE_URL` to change it. Tables are created and changed only by Alembic migrations (`backend/migrations/`), never at startup. Tests still use `create_all` on their in-memory database, for speed.
 
 ## Backend layout
 
@@ -18,7 +18,9 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 - `app/models.py`: SQLAlchemy tables plus the domain rules: `Drill`, `SessionPlan`, `SessionDrill` (an ordered link table, repeats allowed). Rules raise custom exceptions and know nothing about HTTP.
 - `app/schemas.py`: Pydantic request and response shapes, kept separate from the models.
 - `app/routers/`: `drills.py`, `session_plans.py`. They turn model exceptions into HTTP errors (404/422).
+- `migrations/`: Alembic. `env.py` reads `DATABASE_URL` and `Base.metadata`; one file per change in `versions/`.
 - `tests/conftest.py`: the `client` fixture gives each test a fresh in-memory database by overriding `get_db`.
+- `tests/test_migrations.py`: fails if a model changes without a matching migration.
 
 ## Domain rules
 
@@ -31,9 +33,11 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 - Run tests: `uv run pytest`. One file: `uv run pytest tests/test_drills.py`. One test: `uv run pytest tests/test_drills.py::test_create_drill`.
 - Run the server: `uv run fastapi dev app/main.py`, then open http://127.0.0.1:8000/docs
 - Add a dependency: `uv add <package>` (dev: `uv add --dev <package>`)
+- Apply migrations: `uv run alembic upgrade head`. Do this before the first server run and after pulling new migrations.
+- After changing a model: `uv run alembic revision --autogenerate -m "<what changed>"`, read the generated file, then `upgrade head`.
 
 ## Current status
 
-Backend v1 is done (steps 1 to 5), plus drill name search (`GET /drills?search=`), with 34 tests passing. Waiting on the user's walkthrough questions.
+Backend v1 is done (steps 1 to 5), plus drill name search (`GET /drills?search=`) and Alembic migrations, with 36 tests passing.
 
-Next, in order: Alembic migrations (replacing `create_all`), the React frontend in `frontend/` (with CORS), then Supabase Postgres with auth, teams and email invites.
+Next, in order: the React frontend in `frontend/` (with CORS), then a drag-and-drop drill diagram editor (the user chose this over image uploads; store the diagram as JSON data so it stays editable, using common coaching symbols: solid arrow = pass, dashed = run, wavy = dribble), then Supabase Postgres with auth, teams and email invites.

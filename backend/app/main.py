@@ -1,20 +1,11 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.database import Base, DbSession, engine
+from app.database import DbSession
 from app.routers import drills, session_plans
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create any missing tables when the server starts. Alembic replaces this later.
-    Base.metadata.create_all(engine)
-    yield
-
-
-app = FastAPI(title="Practice Planner", lifespan=lifespan)
+# Tables are created and changed by Alembic migrations: run `uv run alembic upgrade head`.
+app = FastAPI(title="Practice Planner")
 app.include_router(drills.router)
 app.include_router(session_plans.router)
 
