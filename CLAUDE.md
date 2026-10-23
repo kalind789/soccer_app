@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A practice planner for soccer coaches: a reusable drill library, plus session plans that put drills in order. v1 is single-user with no login. The user is learning while Claude builds. Work in batches of small, per-step commits, then walk through the code and ask check questions. New terms go in `LEARNING.md`.
+A practice planner for soccer coaches: a reusable drill library, plus session plans that put drills in order. v1 is single-user with no login. The user is learning while Claude builds. Work in batches of small, per-step commits, then walk through the code and ask check questions. New terms go in `learning/`, one file per step (index in `learning/README.md`).
 
 ## Stack
 
@@ -34,6 +34,6 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 ## Current status
 
-Backend v1 is done (steps 1 to 5), with 29 tests passing. Waiting on the user's walkthrough questions.
+Backend v1 is done (steps 1 to 5), plus drill name search (`GET /drills?search=`), with 34 tests passing. Waiting on the user's walkthrough questions.
 
 Next, in order: Alembic migrations (replacing `create_all`), the React frontend in `frontend/` (with CORS), then Supabase Postgres with auth, teams and email invites.
