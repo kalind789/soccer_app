@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { createPlan, listPlans, type PlanFields, type PlanSummary } from '../api'
+import DateTile from '../components/DateTile'
+import Modal from '../components/Modal'
 import PlanForm from '../components/PlanForm'
-import { formatDate, formatMinutes, formatTime } from '../format'
+import { formatMinutes, formatTime } from '../format'
+
+function todayString(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
 
 function PlansPage() {
   const [plans, setPlans] = useState<PlanSummary[] | null>(null) // null = still loading.
@@ -21,51 +29,89 @@ function PlansPage() {
     navigate(`/plans/${plan.id}`) // Go straight to the new plan to add drills.
   }
 
+  // Dates are "YYYY-MM-DD" text, which sorts and compares correctly as plain strings.
+  const today = todayString()
+  const upcoming = plans?.filter((plan) => plan.date >= today) ?? []
+  const past = (plans?.filter((plan) => plan.date < today) ?? []).reverse() // Most recent first.
+
   return (
-    <section>
+    <>
       <div className="page-header">
         <div>
-          <h1>Session plans</h1>
-          <p className="muted">Each practice, with its drills in order.</p>
+          <h1>Sessions</h1>
+          <p className="muted">Plan each practice, drill by drill.</p>
         </div>
-        {!adding && <button onClick={() => setAdding(true)}>New session plan</button>}
+        <button onClick={() => setAdding(true)}>+ New session</button>
       </div>
 
-      {adding && (
-        <div className="card">
-          <h2>New session plan</h2>
-          <PlanForm submitLabel="Create and add drills" onSubmit={handleCreate} onCancel={() => setAdding(false)} />
+      {error && <p className="error">{error}</p>}
+      {!plans && !error && <div className="loading">Loading sessions…</div>}
+
+      {plans?.length === 0 && (
+        <div className="empty-page">
+          <span className="empty-icon">⚽</span>
+          <h2>Plan your first practice</h2>
+          <p className="muted">Pick a date and time, then drop in drills from your library.</p>
+          <button onClick={() => setAdding(true)}>+ New session</button>
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {upcoming.length > 0 && <PlanGroup title="Upcoming" plans={upcoming} />}
+      {past.length > 0 && <PlanGroup title="Past" plans={past} muted />}
 
-      {plans?.length === 0 && <p className="empty">No session plans yet. Create your first one.</p>}
+      {adding && (
+        <Modal title="New session" onClose={() => setAdding(false)}>
+          <PlanForm submitLabel="Create and add drills" onSubmit={handleCreate} onCancel={() => setAdding(false)} />
+        </Modal>
+      )}
+    </>
+  )
+}
 
-      <ul className="list">
-        {plans?.map((plan) => (
+function PlanGroup({ title, plans, muted = false }: { title: string; plans: PlanSummary[]; muted?: boolean }) {
+  return (
+    <section className="group">
+      <h2 className="group-title">
+        {title} <span className="count">{plans.length}</span>
+      </h2>
+      <ul className="plan-list">
+        {plans.map((plan) => (
           <li key={plan.id}>
-            <Link to={`/plans/${plan.id}`} className="card card-link">
-              <div className="card-row">
-                <div>
-                  <h3>{plan.title}</h3>
-                  {plan.focus && (
-                    <p>
-                      <span className="label">Goal</span> {plan.focus}
-                    </p>
-                  )}
-                  <p className="muted">
-                    {formatDate(plan.date)} · {formatTime(plan.start_time)}–{formatTime(plan.end_time)}
-                    {plan.location && ` · ${plan.location}`}
-                  </p>
-                </div>
-                <span className="badge">{formatMinutes(plan.duration_minutes)}</span>
-              </div>
-            </Link>
+            <PlanCard plan={plan} muted={muted} />
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+function PlanCard({ plan, muted }: { plan: PlanSummary; muted: boolean }) {
+  const percent = Math.min(plan.planned_minutes / plan.duration_minutes, 1) * 100
+  const over = plan.planned_minutes > plan.duration_minutes
+
+  return (
+    <Link to={`/plans/${plan.id}`} className={muted ? 'plan-card past' : 'plan-card'}>
+      <DateTile date={plan.date} muted={muted} />
+      <div className="plan-card-body">
+        <h3>{plan.title}</h3>
+        {plan.focus && <p className="goal-line">🎯 {plan.focus}</p>}
+        <p className="muted small-text">
+          {formatTime(plan.start_time)}–{formatTime(plan.end_time)}
+          {plan.location && ` · ${plan.location}`}
+        </p>
+        <div className="progress" aria-label={`${plan.planned_minutes} of ${plan.duration_minutes} minutes planned`}>
+          <div className={over ? 'progress-fill over' : 'progress-fill'} style={{ width: `${percent}%` }} />
+        </div>
+        <p className="small-text muted">
+          {plan.drill_count === 0
+            ? 'No drills yet'
+            : `${plan.drill_count} ${plan.drill_count === 1 ? 'drill' : 'drills'} · ${formatMinutes(plan.planned_minutes)} of ${formatMinutes(plan.duration_minutes)}`}
+        </p>
+      </div>
+      <span className="chevron" aria-hidden="true">
+        ›
+      </span>
+    </Link>
   )
 }
 

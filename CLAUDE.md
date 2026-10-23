@@ -25,11 +25,11 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 ## Frontend layout
 
 - `src/api.ts`: the only place that calls the backend. Its types mirror the Pydantic schemas in `backend/app/schemas.py`, so keep them in sync by hand. `VITE_API_URL` overrides the API address (default `http://127.0.0.1:8000`).
-- `src/App.tsx`: header nav and React Router routes: `/plans`, `/plans/:planId`, `/drills` (`/` redirects to `/plans`).
-- `src/pages/`: one file per route. `PlansPage` (list + create), `PlanPage` (details, edit, delete, drills), `DrillsPage` (search, archive, create, edit).
-- `src/components/`: `DrillForm` and `PlanForm` (each used for both create and edit), `SlotEditor` (a plan's drills: minutes, reorder, remove, add, or create a new library drill inline; edits a draft until Save).
-- `src/format.ts`: date, time and minutes display helpers.
-- `src/index.css`: all styles; colors are CSS variables on `:root`, redefined for dark mode.
+- `src/App.tsx`: header nav, toast provider, and React Router routes: `/plans`, `/plans/:planId`, `/drills` (`/` redirects to `/plans`).
+- `src/pages/`: one file per route. `PlansPage` (upcoming/past cards with progress), `PlanPage` (hero, edit/delete in modals, drill editor), `DrillsPage` (card grid, search, archive with undo, create/edit in modals).
+- `src/components/`: `SlotEditor` (a plan's drills: drag to reorder with dnd-kit, −/+ minute steppers, autosave after 600 ms, flushes pending changes on unmount), `DrillPicker` (searchable click-to-add panel), `Timeline` (colored bar of drill minutes vs session length), `Modal` (native `<dialog>`), `Toast`, `DateTile`, `DrillForm` and `PlanForm` (create and edit).
+- `src/toast.ts`: `useToast()` hook and context. `src/colors.ts`: a stable color per drill id. `src/format.ts`: display helpers.
+- `src/index.css`: all styles, "clean and bright" light theme (the user chose it). Design tokens are CSS variables on `:root`. Font: Plus Jakarta Sans (Google Fonts, loaded in `index.html`).
 - The UI labels drill `objective` and plan `focus` as "Goal". The user chose to keep the field names and only relabel them.
 - The backend's CORS allows only `FRONTEND_ORIGIN` (default `http://localhost:5173`), so open the app at `localhost`, not `127.0.0.1`.
 
@@ -58,4 +58,4 @@ Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 42 tests
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 
-Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. Current work: a UI redesign in a "clean and bright" style (light, soft shadows, rounded cards, colorful accents).
+Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. 

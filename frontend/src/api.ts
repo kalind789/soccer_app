@@ -38,6 +38,8 @@ export type PlanFields = {
 export type PlanSummary = Omit<PlanFields, 'notes'> & {
   id: number
   duration_minutes: number
+  planned_minutes: number // Total of the drills' minutes.
+  drill_count: number
 }
 
 // Matches SessionDrillRead: one drill in a plan, and how long it runs there.
@@ -50,7 +52,6 @@ export type Slot = {
 export type Plan = PlanSummary & {
   notes: string
   slots: Slot[]
-  planned_minutes: number
 }
 
 // Matches SessionDrillEntry: what we send to replace a plan's drill list.

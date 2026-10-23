@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { deletePlan, getPlan, updatePlan, type Plan, type PlanFields } from '../api'
+import DateTile from '../components/DateTile'
+import Modal from '../components/Modal'
 import PlanForm from '../components/PlanForm'
 import SlotEditor from '../components/SlotEditor'
+import { useToast } from '../toast'
 import { formatDate, formatMinutes, formatTime, toTimeInput } from '../format'
 
 function PlanPage() {
@@ -10,7 +13,9 @@ function PlanPage() {
   const [plan, setPlan] = useState<Plan | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const navigate = useNavigate()
+  const showToast = useToast()
 
   useEffect(() => {
     getPlan(Number(planId))
@@ -21,37 +26,71 @@ function PlanPage() {
   async function handleUpdate(fields: PlanFields) {
     setPlan(await updatePlan(Number(planId), fields))
     setEditing(false)
+    showToast({ message: 'Session details saved' })
   }
 
   async function handleDelete() {
-    if (!plan || !confirm(`Delete "${plan.title}"? Its drills stay in your library.`)) return
+    if (!plan) return
     try {
       await deletePlan(plan.id)
+      showToast({ message: `Deleted “${plan.title}”` })
       navigate('/plans')
     } catch (err) {
       setError((err as Error).message)
+      setConfirmingDelete(false)
     }
   }
 
   if (error && !plan) {
     return (
-      <section>
-        <p className="error">{error}</p>
-        <Link to="/plans">← Back to session plans</Link>
-      </section>
+      <div className="empty-page">
+        <span className="empty-icon">🔍</span>
+        <h2>We couldn't find that session</h2>
+        <p className="muted">{error}</p>
+        <Link to="/plans" className="button">
+          Back to sessions
+        </Link>
+      </div>
     )
   }
-  if (!plan) return <p className="muted">Loading…</p>
+  if (!plan) return <div className="loading">Loading session…</div>
 
   return (
-    <section>
+    <>
       <Link to="/plans" className="back">
-        ← Session plans
+        ← All sessions
       </Link>
 
-      {editing ? (
-        <div className="card">
-          <h2>Edit session details</h2>
+      <header className="hero">
+        <DateTile date={plan.date} />
+        <div className="hero-text">
+          <h1>{plan.title}</h1>
+          {plan.focus && <p className="goal-chip">🎯 {plan.focus}</p>}
+          <div className="meta">
+            <span>🗓 {formatDate(plan.date)}</span>
+            <span>
+              🕕 {formatTime(plan.start_time)}–{formatTime(plan.end_time)} · {formatMinutes(plan.duration_minutes)}
+            </span>
+            {plan.location && <span>📍 {plan.location}</span>}
+          </div>
+          {plan.notes && <p className="notes">{plan.notes}</p>}
+        </div>
+        <div className="hero-actions">
+          <button className="secondary" onClick={() => setEditing(true)}>
+            Edit details
+          </button>
+          <button className="ghost danger-text" onClick={() => setConfirmingDelete(true)}>
+            Delete
+          </button>
+        </div>
+      </header>
+
+      {error && <p className="error">{error}</p>}
+
+      <SlotEditor plan={plan} onSaved={setPlan} />
+
+      {editing && (
+        <Modal title="Edit session details" onClose={() => setEditing(false)}>
           <PlanForm
             initial={{
               title: plan.title,
@@ -66,37 +105,25 @@ function PlanPage() {
             onSubmit={handleUpdate}
             onCancel={() => setEditing(false)}
           />
-        </div>
-      ) : (
-        <div className="page-header">
-          <div>
-            <h1>{plan.title}</h1>
-            {plan.focus && (
-              <p className="goal">
-                <span className="label">Goal</span> {plan.focus}
-              </p>
-            )}
-            <p className="muted">
-              {formatDate(plan.date)} · {formatTime(plan.start_time)}–{formatTime(plan.end_time)} (
-              {formatMinutes(plan.duration_minutes)}){plan.location && ` · ${plan.location}`}
-            </p>
-            {plan.notes && <p className="pre-line">{plan.notes}</p>}
-          </div>
-          <div className="row">
-            <button className="secondary" onClick={() => setEditing(true)}>
-              Edit details
-            </button>
-            <button className="danger" onClick={handleDelete}>
-              Delete
-            </button>
-          </div>
-        </div>
+        </Modal>
       )}
 
-      {error && <p className="error">{error}</p>}
-
-      <SlotEditor plan={plan} onSaved={setPlan} />
-    </section>
+      {confirmingDelete && (
+        <Modal title="Delete this session?" onClose={() => setConfirmingDelete(false)}>
+          <p>
+            “{plan.title}” will be deleted. Its drills stay in your library, so nothing else is lost.
+          </p>
+          <div className="row end">
+            <button className="secondary" onClick={() => setConfirmingDelete(false)}>
+              Keep it
+            </button>
+            <button className="danger" onClick={handleDelete}>
+              Delete session
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
   )
 }
 
