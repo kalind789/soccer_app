@@ -61,14 +61,31 @@ class SessionPlanSummary(BaseModel):
     duration_minutes: int
 
 
+class SessionDrillRead(BaseModel):
+    """One slot in a plan: the drill, and how long it runs in this plan."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    drill: DrillRead
+    minutes: int
+
+
 class SessionPlanRead(SessionPlanSummary):
     """The full version, used when showing one session plan."""
 
     notes: str
-    drills: list[DrillRead]
+    # Named `slots` to match the model: the same drill can appear more than once.
+    slots: list[SessionDrillRead]
+    planned_minutes: int
+
+
+class SessionDrillEntry(BaseModel):
+    drill_id: int
+    # Any positive number of minutes. There's no upper limit: the coach decides.
+    minutes: int = Field(gt=0)
 
 
 class SessionDrillsUpdate(BaseModel):
-    """The full, ordered list of drill ids. It replaces the plan's current list."""
+    """The full, ordered list of drills with their minutes. It replaces the plan's current list."""
 
-    drill_ids: list[int]
+    drills: list[SessionDrillEntry]

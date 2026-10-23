@@ -62,20 +62,27 @@ class SessionPlan(Base):
             raise InvalidSessionTimesError("end_time must be after start_time")
 
     @property
-    def drills(self) -> list[Drill]:
-        return [slot.drill for slot in self.slots]
+    def planned_minutes(self) -> int:
+        """Total drill time. It can be more or less than duration_minutes; the coach decides."""
+        return sum(slot.minutes for slot in self.slots)
 
-    def set_drills(self, drills: list[Drill]) -> None:
-        """Replace the drill list. The list order becomes the session order, and repeats are allowed."""
-        already_in_plan = {drill.id for drill in self.drills}
-        for drill in drills:
+    def set_drills(self, drills: list[tuple[Drill, int]]) -> None:
+        """Replace the drill list with (drill, minutes) pairs.
+
+        The list order becomes the session order, and repeats are allowed.
+        """
+        already_in_plan = {slot.drill_id for slot in self.slots}
+        for drill, _ in drills:
             if drill.archived and drill.id not in already_in_plan:
                 raise ArchivedDrillError(f"Drill {drill.id} is archived")
-        self.slots = [SessionDrill(drill=drill, position=i) for i, drill in enumerate(drills)]
+        self.slots = [
+            SessionDrill(drill=drill, minutes=minutes, position=i)
+            for i, (drill, minutes) in enumerate(drills)
+        ]
 
 
 class SessionDrill(Base):
-    """One slot in a session plan: which drill, and where in the order.
+    """One slot in a session plan: which drill, for how long, and where in the order.
 
     A link table between SessionPlan and Drill. It has its own id, so the same
     drill can appear in a plan more than once.
@@ -87,5 +94,7 @@ class SessionDrill(Base):
     session_plan_id: Mapped[int] = mapped_column(ForeignKey("session_plans.id"))
     drill_id: Mapped[int] = mapped_column(ForeignKey("drills.id"))
     position: Mapped[int]
+    # Lives on the slot, not the drill: the same drill can run 15 minutes in one plan and 20 in another.
+    minutes: Mapped[int]
 
     drill: Mapped[Drill] = relationship()

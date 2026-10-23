@@ -102,12 +102,18 @@ def create_drill(client, name):
     return client.post("/drills", json={"name": name}).json()
 
 
-def set_drills(client, plan_id, drill_ids):
-    return client.put(f"/session-plans/{plan_id}/drills", json={"drill_ids": drill_ids})
+def set_drills(client, plan_id, drill_ids, minutes=10):
+    """Put these drills in the plan, each for `minutes`."""
+    entries = [{"drill_id": drill_id, "minutes": minutes} for drill_id in drill_ids]
+    return client.put(f"/session-plans/{plan_id}/drills", json={"drills": entries})
+
+
+def drill_names(plan):
+    return [slot["drill"]["name"] for slot in plan["slots"]]
 
 
 def test_new_plan_has_no_drills(client):
-    assert create_plan(client)["drills"] == []
+    assert create_plan(client)["slots"] == []
 
 
 def test_set_drills_keeps_order(client):
@@ -118,9 +124,9 @@ def test_set_drills_keeps_order(client):
     response = set_drills(client, plan["id"], [shooting["id"], rondo["id"]])
 
     assert response.status_code == 200
-    assert [d["name"] for d in response.json()["drills"]] == ["Shooting", "Rondo"]
+    assert drill_names(response.json()) == ["Shooting", "Rondo"]
     saved = client.get(f"/session-plans/{plan['id']}").json()
-    assert [d["name"] for d in saved["drills"]] == ["Shooting", "Rondo"]
+    assert drill_names(saved) == ["Shooting", "Rondo"]
 
 
 def test_set_drills_replaces_previous_list(client):
@@ -131,7 +137,7 @@ def test_set_drills_replaces_previous_list(client):
 
     response = set_drills(client, plan["id"], [shooting["id"]])
 
-    assert [d["name"] for d in response.json()["drills"]] == ["Shooting"]
+    assert drill_names(response.json()) == ["Shooting"]
 
 
 def test_set_drills_allows_repeats(client):
@@ -141,7 +147,7 @@ def test_set_drills_allows_repeats(client):
 
     response = set_drills(client, plan["id"], [rondo["id"], shooting["id"], rondo["id"]])
 
-    assert [d["name"] for d in response.json()["drills"]] == ["Rondo", "Shooting", "Rondo"]
+    assert drill_names(response.json()) == ["Rondo", "Shooting", "Rondo"]
 
 
 def test_set_drills_unknown_drill_returns_404(client):
@@ -170,7 +176,7 @@ def test_archived_drill_already_in_plan_can_stay(client):
     response = set_drills(client, plan["id"], [rondo["id"], shooting["id"]])
 
     assert response.status_code == 200
-    assert response.json()["drills"][0]["archived"] is True
+    assert response.json()["slots"][0]["drill"]["archived"] is True
 
 
 def test_editing_a_drill_shows_up_in_plans(client):
@@ -181,7 +187,7 @@ def test_editing_a_drill_shows_up_in_plans(client):
     client.patch(f"/drills/{rondo['id']}", json={"name": "Rondo 5v2"})
 
     saved = client.get(f"/session-plans/{plan['id']}").json()
-    assert saved["drills"][0]["name"] == "Rondo 5v2"
+    assert saved["slots"][0]["drill"]["name"] == "Rondo 5v2"
 
 
 def test_deleting_plan_keeps_its_drills(client):
@@ -192,3 +198,44 @@ def test_deleting_plan_keeps_its_drills(client):
     client.delete(f"/session-plans/{plan['id']}")
 
     assert client.get(f"/drills/{rondo['id']}").status_code == 200
+
+
+def test_each_slot_has_its_own_minutes(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+    shooting = create_drill(client, "Shooting")
+    entries = [{"drill_id": rondo["id"], "minutes": 15}, {"drill_id": shooting["id"], "minutes": 25}]
+
+    response = client.put(f"/session-plans/{plan['id']}/drills", json={"drills": entries})
+
+    assert [slot["minutes"] for slot in response.json()["slots"]] == [15, 25]
+    assert response.json()["planned_minutes"] == 40
+
+
+def test_same_drill_can_run_different_times_in_different_plans(client):
+    monday = create_plan(client, title="Monday")
+    thursday = create_plan(client, title="Thursday")
+    rondo = create_drill(client, "Rondo 4v2")
+
+    set_drills(client, monday["id"], [rondo["id"]], minutes=15)
+    set_drills(client, thursday["id"], [rondo["id"]], minutes=20)
+
+    assert client.get(f"/session-plans/{monday['id']}").json()["slots"][0]["minutes"] == 15
+    assert client.get(f"/session-plans/{thursday['id']}").json()["slots"][0]["minutes"] == 20
+
+
+def test_planned_minutes_can_be_more_than_the_session(client):
+    plan = create_plan(client)  # 90 minutes long
+    rondo = create_drill(client, "Rondo")
+
+    response = set_drills(client, plan["id"], [rondo["id"]], minutes=120)
+
+    assert response.status_code == 200
+    assert response.json()["planned_minutes"] == 120
+
+
+def test_minutes_must_be_positive(client):
+    plan = create_plan(client)
+    rondo = create_drill(client, "Rondo")
+
+    assert set_drills(client, plan["id"], [rondo["id"]], minutes=0).status_code == 422

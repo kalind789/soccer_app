@@ -71,7 +71,7 @@ def delete_plan(plan_id: int, db: DbSession) -> None:
 @router.put("/{plan_id}/drills")
 def set_plan_drills(plan_id: int, data: SessionDrillsUpdate, db: DbSession) -> SessionPlanRead:
     plan = get_plan_or_404(db, plan_id)
-    drills = [get_drill_or_404(db, drill_id) for drill_id in data.drill_ids]
+    drills = [(get_drill_or_404(db, entry.drill_id), entry.minutes) for entry in data.drills]
     try:
         plan.set_drills(drills)
     except ArchivedDrillError as error:
