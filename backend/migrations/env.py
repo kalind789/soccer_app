@@ -6,14 +6,14 @@ from alembic import context
 from sqlalchemy import create_engine
 
 import app.models  # noqa: F401  Importing the models registers their tables on Base.metadata.
-from app.database import DATABASE_URL, Base
+from app.database import DATABASE_URL, Base, normalize_url
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Use the app's DATABASE_URL, unless the caller (a test) set its own.
-url = config.get_main_option("sqlalchemy.url") or DATABASE_URL
+url = normalize_url(config.get_main_option("sqlalchemy.url") or DATABASE_URL)
 
 with create_engine(url).connect() as connection:
     context.configure(

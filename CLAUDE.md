@@ -10,15 +10,15 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 - **Backend:** FastAPI + SQLAlchemy 2.0 + Pydantic, in `backend/`. Python >= 3.13, managed with uv. Tests use pytest. No linter.
 - **Frontend:** React 19 + TypeScript + Vite, in `frontend/`. Lint with oxlint (`npm run lint`). No frontend tests yet.
-- **Storage:** SQLite (`backend/planner.db`, gitignored). Set `DATABASE_URL` to change it. Tables are created and changed only by Alembic migrations (`backend/migrations/`), never at startup. Tests still use `create_all` on their in-memory database, for speed.
+- **Storage:** Supabase Postgres when `backend/.env` sets `DATABASE_URL` (template: `backend/.env.example`; `.env` is gitignored and holds the password). Without it, local SQLite (`backend/planner.db`, gitignored). Driver: psycopg 3; `normalize_url` in `database.py` turns Supabase's `postgresql://` into `postgresql+psycopg://`. Tables are created and changed only by Alembic migrations (`backend/migrations/`), never at startup. Tests still use `create_all` on their in-memory database, for speed.
 
 ## Backend layout
 
-- `app/database.py`: engine (from `DATABASE_URL`), `Base`, `get_db`, and the `DbSession` type for endpoints.
+- `app/database.py`: loads `.env`, engine (from `DATABASE_URL`), `Base`, `get_db`, and the `DbSession` type for endpoints.
 - `app/models.py`: SQLAlchemy tables plus the domain rules: `Drill`, `SessionPlan`, `SessionDrill` (an ordered link table, repeats allowed). Rules raise custom exceptions and know nothing about HTTP.
 - `app/schemas.py`: Pydantic request and response shapes, kept separate from the models.
 - `app/routers/`: `drills.py`, `session_plans.py`. They turn model exceptions into HTTP errors (404/422).
-- `migrations/`: Alembic. `env.py` reads `DATABASE_URL` and `Base.metadata`; one file per change in `versions/`.
+- `migrations/`: Alembic. `env.py` reads `DATABASE_URL` and `Base.metadata`; one file per change in `versions/`. Every new table must get `ENABLE ROW LEVEL SECURITY` on Postgres (see the RLS migration): otherwise Supabase's public Data API can read and write it.
 - `tests/conftest.py`: the `client` fixture gives each test a fresh in-memory database by overriding `get_db`.
 - `tests/test_migrations.py`: fails if a model changes without a matching migration.
 
