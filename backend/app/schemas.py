@@ -28,7 +28,35 @@ class DrillRead(BaseModel):
     archived: bool
 
 
+class TeamCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    season: str = Field(min_length=1, max_length=20)
+    # Set when starting next season's version of an existing team.
+    previous_team_id: int | None = None
+
+
+class TeamUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    season: str | None = Field(default=None, min_length=1, max_length=20)
+
+
+class TeamRef(BaseModel):
+    """Just enough to show which team something belongs to."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    season: str
+
+
+class TeamRead(TeamRef):
+    previous_team_id: int | None
+    plan_count: int
+
+
 class SessionPlanCreate(BaseModel):
+    team_id: int
     title: str = Field(min_length=1, max_length=100)
     focus: str = Field(default="", max_length=200)
     location: str = Field(default="", max_length=200)
@@ -38,6 +66,7 @@ class SessionPlanCreate(BaseModel):
     end_time: dt.time
 
 class SessionPlanUpdate(BaseModel):
+    team_id: int | None = None  # Move the plan to another of your teams.
     title: str | None = Field(default=None, min_length=1, max_length=100)
     focus: str | None = Field(default=None, max_length=200)
     location: str | None = Field(default=None, max_length=200)
@@ -52,6 +81,7 @@ class SessionPlanSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    team: TeamRef
     title: str
     focus: str
     location: str

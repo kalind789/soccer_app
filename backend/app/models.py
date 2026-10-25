@@ -15,6 +15,10 @@ class ArchivedDrillError(Exception):
     """Raised when an archived drill is newly added to a session plan."""
 
 
+class TeamNotEmptyError(Exception):
+    """Raised when deleting a team that still has session plans."""
+
+
 class Drill(Base):
     """A reusable drill in the coach's library."""
 
@@ -36,13 +40,43 @@ class Drill(Base):
         self.archived = False
 
 
+class Team(Base):
+    """One team for one season, e.g. "U12 Eagles" in "2026–27".
+
+    Next year is a new Team that points back here with previous_team_id: a fresh start each
+    season, while the link keeps the team's history across the years.
+    """
+
+    __tablename__ = "teams"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # The coach in charge. Ticket 003 replaces this with a list of coaches per team.
+    owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    # Free text, because clubs write seasons differently: "2026", "2026–27", "Fall 2026".
+    season: Mapped[str] = mapped_column(String(20))
+    previous_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"))
+
+    plans: Mapped[list["SessionPlan"]] = relationship(back_populates="team")
+
+    @property
+    def plan_count(self) -> int:
+        return len(self.plans)
+
+    def check_can_delete(self) -> None:
+        # Deleting a team would take its plans with it, so empty it first (move or delete the plans).
+        if self.plans:
+            raise TeamNotEmptyError(f"{self.name} still has {len(self.plans)} session plans")
+
+
 class SessionPlan(Base):
     """One planned practice. Not called `Session`, which is SQLAlchemy's database session."""
 
     __tablename__ = "session_plans"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
+    # Who can see a plan follows from its team, so a plan has no owner of its own.
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), index=True)
     title: Mapped[str] = mapped_column(String(100))
     focus: Mapped[str] = mapped_column(String(200), default="")
     location: Mapped[str] = mapped_column(String(200), default="")
@@ -50,6 +84,8 @@ class SessionPlan(Base):
     date: Mapped[dt.date]
     start_time: Mapped[dt.time]
     end_time: Mapped[dt.time]
+
+    team: Mapped[Team] = relationship(back_populates="plans")
 
     # The ordered slots. Deleting a plan deletes its slots, but never the drills themselves.
     slots: Mapped[list["SessionDrill"]] = relationship(

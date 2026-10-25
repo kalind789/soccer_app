@@ -8,7 +8,14 @@ PRESSING = {
 }
 
 
+def create_team(client, name="U12 Eagles", season="2026"):
+    return client.post("/teams", json={"name": name, "season": season}).json()
+
+
 def create_plan(client, **overrides):
+    """Make a plan. Without a team_id, it goes in a new team."""
+    if "team_id" not in overrides:
+        overrides["team_id"] = create_team(client)["id"]
     response = client.post("/session-plans", json={**PRESSING, **overrides})
     assert response.status_code == 201
     return response.json()
@@ -34,7 +41,7 @@ def test_create_plan_saves_location(client):
 def test_location_defaults_to_empty(client):
     without_location = {key: value for key, value in PRESSING.items() if key != "location"}
 
-    response = client.post("/session-plans", json=without_location)
+    response = client.post("/session-plans", json={**without_location, "team_id": create_team(client)["id"]})
 
     assert response.status_code == 201
     assert response.json()["location"] == ""

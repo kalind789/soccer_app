@@ -5,6 +5,11 @@ from conftest import BOB
 PLAN = {"title": "Pressing", "date": "2026-11-03", "start_time": "18:00", "end_time": "19:30"}
 
 
+def create_plan(client):
+    team = client.post("/teams", json={"name": "U12 Eagles", "season": "2026"}).json()
+    return client.post("/session-plans", json={**PLAN, "team_id": team["id"]}).json()
+
+
 def test_drill_lists_only_show_your_own(client, login_as):
     client.post("/drills", json={"name": "Alice's rondo"})
     login_as(BOB)
@@ -23,14 +28,14 @@ def test_someone_elses_drill_looks_missing(client, login_as):
 
 
 def test_plan_lists_only_show_your_own(client, login_as):
-    client.post("/session-plans", json=PLAN)
+    create_plan(client)
     login_as(BOB)
 
     assert client.get("/session-plans").json() == []
 
 
 def test_someone_elses_plan_looks_missing(client, login_as):
-    plan = client.post("/session-plans", json=PLAN).json()
+    plan = create_plan(client)
     login_as(BOB)
 
     assert client.get(f"/session-plans/{plan['id']}").status_code == 404
@@ -42,7 +47,7 @@ def test_someone_elses_plan_looks_missing(client, login_as):
 def test_cant_put_someone_elses_drill_in_your_plan(client, login_as):
     alices_drill = client.post("/drills", json={"name": "Alice's rondo"}).json()
     login_as(BOB)
-    bobs_plan = client.post("/session-plans", json=PLAN).json()
+    bobs_plan = create_plan(client)
 
     response = client.put(
         f"/session-plans/{bobs_plan['id']}/drills",
