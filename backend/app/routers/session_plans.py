@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.auth import CurrentUser, User
 from app.database import DbSession
 from app.models import ArchivedDrillError, InvalidSessionTimesError, SessionPlan
 from app.routers.drills import get_drill_or_404
@@ -16,9 +17,10 @@ from app.schemas import (
 router = APIRouter(prefix="/session-plans", tags=["session plans"])
 
 
-def get_plan_or_404(db: DbSession, plan_id: int) -> SessionPlan:
+def get_plan_or_404(db: DbSession, plan_id: int, user: User) -> SessionPlan:
     plan = db.get(SessionPlan, plan_id)
-    if plan is None:
+    # Someone else's plan gets the same 404 as a missing one, so ids don't reveal what exists.
+    if plan is None or plan.owner_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Session plan {plan_id} not found")
     return plan
 
@@ -32,8 +34,8 @@ def check_times_or_422(db: DbSession, plan: SessionPlan) -> None:
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_plan(data: SessionPlanCreate, db: DbSession) -> SessionPlanRead:
-    plan = SessionPlan(**data.model_dump())
+def create_plan(data: SessionPlanCreate, db: DbSession, user: CurrentUser) -> SessionPlanRead:
+    plan = SessionPlan(**data.model_dump(), owner_id=user.id)
     check_times_or_422(db, plan)
     db.add(plan)
     db.commit()
@@ -42,10 +44,11 @@ def create_plan(data: SessionPlanCreate, db: DbSession) -> SessionPlanRead:
 
 
 @router.get("")
-def list_plans(db: DbSession) -> list[SessionPlanSummary]:
+def list_plans(db: DbSession, user: CurrentUser) -> list[SessionPlanSummary]:
     # Load every plan's slots in one extra query, instead of one query per plan (the "N+1" problem).
     query = (
         select(SessionPlan)
+        .where(SessionPlan.owner_id == user.id)
         .options(selectinload(SessionPlan.slots))
         .order_by(SessionPlan.date, SessionPlan.start_time)
     )
@@ -53,13 +56,13 @@ def list_plans(db: DbSession) -> list[SessionPlanSummary]:
 
 
 @router.get("/{plan_id}")
-def get_plan(plan_id: int, db: DbSession) -> SessionPlanRead:
-    return SessionPlanRead.model_validate(get_plan_or_404(db, plan_id))
+def get_plan(plan_id: int, db: DbSession, user: CurrentUser) -> SessionPlanRead:
+    return SessionPlanRead.model_validate(get_plan_or_404(db, plan_id, user))
 
 
 @router.patch("/{plan_id}")
-def update_plan(plan_id: int, data: SessionPlanUpdate, db: DbSession) -> SessionPlanRead:
-    plan = get_plan_or_404(db, plan_id)
+def update_plan(plan_id: int, data: SessionPlanUpdate, db: DbSession, user: CurrentUser) -> SessionPlanRead:
+    plan = get_plan_or_404(db, plan_id, user)
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(plan, field, value)
     # Check after merging, so changing only end_time is still compared to the saved start_time.
@@ -69,15 +72,16 @@ def update_plan(plan_id: int, data: SessionPlanUpdate, db: DbSession) -> Session
 
 
 @router.delete("/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_plan(plan_id: int, db: DbSession) -> None:
-    db.delete(get_plan_or_404(db, plan_id))
+def delete_plan(plan_id: int, db: DbSession, user: CurrentUser) -> None:
+    db.delete(get_plan_or_404(db, plan_id, user))
     db.commit()
 
 
 @router.put("/{plan_id}/drills")
-def set_plan_drills(plan_id: int, data: SessionDrillsUpdate, db: DbSession) -> SessionPlanRead:
-    plan = get_plan_or_404(db, plan_id)
-    drills = [(get_drill_or_404(db, entry.drill_id), entry.minutes) for entry in data.drills]
+def set_plan_drills(plan_id: int, data: SessionDrillsUpdate, db: DbSession, user: CurrentUser) -> SessionPlanRead:
+    plan = get_plan_or_404(db, plan_id, user)
+    # Each drill must be the user's own: someone else's drill id gets a 404, like a missing one.
+    drills = [(get_drill_or_404(db, entry.drill_id, user), entry.minutes) for entry in data.drills]
     try:
         plan.set_drills(drills)
     except ArchivedDrillError as error:

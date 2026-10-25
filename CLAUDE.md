@@ -14,12 +14,14 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 ## Backend layout
 
-- `app/database.py`: loads `.env`, engine (from `DATABASE_URL`), `Base`, `get_db`, and the `DbSession` type for endpoints.
+- `app/settings.py`: loads `backend/.env` and holds every setting: `DATABASE_URL` (+ `normalize_url`), `FRONTEND_ORIGIN`, `SUPABASE_URL`.
+- `app/database.py`: engine, `Base`, `get_db`, and the `DbSession` type for endpoints.
+- `app/auth.py`: `get_current_user` verifies the Supabase access token (`Authorization: Bearer`) against the project's public JWKS keys (ES256; asymmetric algorithms only; audience `authenticated`, issuer `<SUPABASE_URL>/auth/v1`). `CurrentUser` is the endpoint shortcut. No secret is needed in the backend.
 - `app/models.py`: SQLAlchemy tables plus the domain rules: `Drill`, `SessionPlan`, `SessionDrill` (an ordered link table, repeats allowed). Rules raise custom exceptions and know nothing about HTTP.
 - `app/schemas.py`: Pydantic request and response shapes, kept separate from the models.
 - `app/routers/`: `drills.py`, `session_plans.py`. They turn model exceptions into HTTP errors (404/422).
 - `migrations/`: Alembic. `env.py` reads `DATABASE_URL` and `Base.metadata`; one file per change in `versions/`. Every new table must get `ENABLE ROW LEVEL SECURITY` on Postgres (see the RLS migration): otherwise Supabase's public Data API can read and write it.
-- `tests/conftest.py`: the `client` fixture gives each test a fresh in-memory database by overriding `get_db`.
+- `tests/conftest.py`: the `client` fixture gives each test a fresh in-memory database by overriding `get_db`, and fakes the login as `ALICE`; `login_as(BOB)` switches users. `tests/test_auth.py` tests the real token check with a locally generated ES256 key.
 - `tests/test_migrations.py`: fails if a model changes without a matching migration.
 
 ## Frontend layout
@@ -35,6 +37,7 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 ## Domain rules
 
+- Every drill and session plan has an `owner_id` (the Supabase user id). Every endpoint except `/health` and `/version` needs a login (401 otherwise) and only touches the user's own rows. Someone else's id is a 404, never a 403. Pre-login rows were given the all-zeros owner, so nobody sees them.
 - Drills are archived, never deleted. Archived drills are hidden from `GET /drills` unless `?include_archived=true`. Editing a drill changes it in every plan that uses it.
 - A session plan's `end_time` must be after `start_time`. `duration_minutes` is calculated, never stored.
 - `PUT /session-plans/{id}/drills` replaces the ordered list with `{drill_id, minutes}` entries. An archived drill can't be newly added, but one already in the plan can stay.
@@ -58,4 +61,4 @@ Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 43 tests
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 
-Ticket 002 is in progress (step 1 of 5, Supabase Postgres, is done). Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. 
+Ticket 002 is in progress: steps 1 to 3 are done (Supabase Postgres, owners, backend login check). The frontend has no login yet, so it gets 401s until step 4 is done. Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. 

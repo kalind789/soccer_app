@@ -1,4 +1,5 @@
 import datetime as dt
+import uuid
 
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,6 +21,9 @@ class Drill(Base):
     __tablename__ = "drills"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # The coach who owns it: their Supabase user id. Indexed, because every list filters by it.
+    # No foreign key to auth.users: that table belongs to Supabase, and tests run on SQLite without it.
+    owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
     objective: Mapped[str] = mapped_column(Text, default="")
@@ -38,6 +42,7 @@ class SessionPlan(Base):
     __tablename__ = "session_plans"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
     title: Mapped[str] = mapped_column(String(100))
     focus: Mapped[str] = mapped_column(String(200), default="")
     location: Mapped[str] = mapped_column(String(200), default="")
