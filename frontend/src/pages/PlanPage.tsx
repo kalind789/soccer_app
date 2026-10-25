@@ -5,6 +5,7 @@ import DateTile from '../components/DateTile'
 import Modal from '../components/Modal'
 import PlanForm from '../components/PlanForm'
 import SlotEditor from '../components/SlotEditor'
+import { useTeams } from '../teamContext'
 import { useToast } from '../toast'
 import { formatDate, formatMinutes, formatTime, toTimeInput } from '../format'
 
@@ -16,6 +17,7 @@ function PlanPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const navigate = useNavigate()
   const showToast = useToast()
+  const { reloadTeams } = useTeams()
 
   useEffect(() => {
     getPlan(Number(planId))
@@ -26,6 +28,7 @@ function PlanPage() {
   async function handleUpdate(fields: PlanFields) {
     setPlan(await updatePlan(Number(planId), fields))
     setEditing(false)
+    void reloadTeams() // The plan may have moved to another team, so session counts change.
     showToast({ message: 'Session details saved' })
   }
 
@@ -33,6 +36,7 @@ function PlanPage() {
     if (!plan) return
     try {
       await deletePlan(plan.id)
+      void reloadTeams()
       showToast({ message: `Deleted “${plan.title}”` })
       navigate('/plans')
     } catch (err) {
@@ -64,6 +68,9 @@ function PlanPage() {
       <header className="hero">
         <DateTile date={plan.date} />
         <div className="hero-text">
+          <p className="eyebrow">
+            {plan.team.name} · {plan.team.season}
+          </p>
           <h1>{plan.title}</h1>
           {plan.focus && <p className="goal-chip">🎯 {plan.focus}</p>}
           <div className="meta">
@@ -93,6 +100,7 @@ function PlanPage() {
         <Modal title="Edit session details" onClose={() => setEditing(false)}>
           <PlanForm
             initial={{
+              team_id: plan.team.id,
               title: plan.title,
               focus: plan.focus,
               location: plan.location,

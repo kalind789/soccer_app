@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { createPlan, listPlans, type PlanFields, type PlanSummary } from '../api'
+import { createPlan, createTeam, listPlans, type PlanFields, type PlanSummary, type TeamFields } from '../api'
 import DateTile from '../components/DateTile'
 import Modal from '../components/Modal'
 import PlanForm from '../components/PlanForm'
+import TeamForm from '../components/TeamForm'
 import { formatMinutes, formatTime } from '../format'
+import { useTeams } from '../teamContext'
 
 function todayString(): string {
   const now = new Date()
@@ -13,21 +15,59 @@ function todayString(): string {
 }
 
 function PlansPage() {
+  const { teams, selectedTeam, selectTeam, reloadTeams } = useTeams()
   const [plans, setPlans] = useState<PlanSummary[] | null>(null) // null = still loading.
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const navigate = useNavigate()
+  const teamId = selectedTeam?.id
 
+  // Load the selected team's plans, again whenever the coach switches team.
   useEffect(() => {
-    listPlans()
-      .then(setPlans)
-      .catch((err: Error) => setError(err.message))
-  }, [])
+    if (teamId === undefined) return
+    let ignore = false // Switching teams quickly: only show the latest team's plans.
+    listPlans(teamId)
+      .then((result) => {
+        if (!ignore) {
+          setPlans(result)
+          setError(null)
+        }
+      })
+      .catch((err: Error) => {
+        if (!ignore) setError(err.message)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [teamId])
 
   async function handleCreate(fields: PlanFields) {
     const plan = await createPlan(fields)
+    void reloadTeams() // Session counts changed.
     navigate(`/plans/${plan.id}`) // Go straight to the new plan to add drills.
   }
+
+  async function handleCreateTeam(fields: TeamFields) {
+    const team = await createTeam(fields)
+    await reloadTeams()
+    selectTeam(team.id)
+  }
+
+  if (teams?.length === 0) {
+    return (
+      <div className="welcome">
+        <span className="empty-icon">🛡️</span>
+        <h1>Start with a team</h1>
+        <p className="muted">
+          Session plans belong to a team, for one season, like “U12 Eagles” in 2026. You can add more teams anytime.
+        </p>
+        <div className="panel">
+          <TeamForm submitLabel="Create team" onSubmit={handleCreateTeam} />
+        </div>
+      </div>
+    )
+  }
+  if (!selectedTeam) return <div className="loading">Loading…</div>
 
   // Dates are "YYYY-MM-DD" text, which sorts and compares correctly as plain strings.
   const today = todayString()
@@ -38,6 +78,9 @@ function PlansPage() {
     <>
       <div className="page-header">
         <div>
+          <p className="eyebrow">
+            {selectedTeam.name} · {selectedTeam.season}
+          </p>
           <h1>Sessions</h1>
           <p className="muted">Plan each practice, drill by drill.</p>
         </div>
@@ -50,7 +93,7 @@ function PlansPage() {
       {plans?.length === 0 && (
         <div className="empty-page">
           <span className="empty-icon">⚽</span>
-          <h2>Plan your first practice</h2>
+          <h2>Plan {selectedTeam.name}'s first practice</h2>
           <p className="muted">Pick a date and time, then drop in drills from your library.</p>
           <button onClick={() => setAdding(true)}>+ New session</button>
         </div>

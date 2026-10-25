@@ -4,3 +4,6 @@ const DRILL_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#e
 export function drillColor(drillId: number): string {
   return DRILL_COLORS[drillId % DRILL_COLORS.length]
 }
+
+// Teams use the same palette, so each team keeps one color in the header and on the Teams page.
+export const teamColor = drillColor

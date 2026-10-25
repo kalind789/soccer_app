@@ -21,10 +21,33 @@ export type DrillFields = {
   objective: string
 }
 
+// --- Teams ---
+
+// Matches TeamRef: enough to show which team something belongs to.
+export type TeamRef = {
+  id: number
+  name: string
+  season: string // Free text: "2026", "2026–27", "Fall 2026".
+}
+
+// Matches TeamRead.
+export type Team = TeamRef & {
+  previous_team_id: number | null // Last season's version of this team.
+  plan_count: number
+}
+
+// Matches TeamCreate and TeamUpdate.
+export type TeamFields = {
+  name: string
+  season: string
+  previous_team_id?: number | null
+}
+
 // --- Session plans ---
 
 // Matches SessionPlanCreate and SessionPlanUpdate.
 export type PlanFields = {
+  team_id: number
   title: string
   focus: string
   location: string
@@ -35,8 +58,9 @@ export type PlanFields = {
 }
 
 // Matches SessionPlanSummary: the short version, used in lists.
-export type PlanSummary = Omit<PlanFields, 'notes'> & {
+export type PlanSummary = Omit<PlanFields, 'notes' | 'team_id'> & {
   id: number
+  team: TeamRef
   duration_minutes: number
   planned_minutes: number // Total of the drills' minutes.
   drill_count: number
@@ -103,9 +127,17 @@ export const updateDrill = (id: number, fields: DrillFields) => send<Drill>('PAT
 export const archiveDrill = (id: number) => send<Drill>('POST', `/drills/${id}/archive`)
 export const unarchiveDrill = (id: number) => send<Drill>('POST', `/drills/${id}/unarchive`)
 
+// --- Team calls ---
+
+export const listTeams = () => request<Team[]>('/teams')
+export const createTeam = (fields: TeamFields) => send<Team>('POST', '/teams', fields)
+export const updateTeam = (id: number, fields: TeamFields) => send<Team>('PATCH', `/teams/${id}`, fields)
+export const deleteTeam = (id: number) => send<void>('DELETE', `/teams/${id}`)
+
 // --- Session plan calls ---
 
-export const listPlans = () => request<PlanSummary[]>('/session-plans')
+export const listPlans = (teamId?: number) =>
+  request<PlanSummary[]>(teamId === undefined ? '/session-plans' : `/session-plans?team_id=${teamId}`)
 export const getPlan = (id: number) => request<Plan>(`/session-plans/${id}`)
 export const createPlan = (fields: PlanFields) => send<Plan>('POST', '/session-plans', fields)
 export const updatePlan = (id: number, fields: PlanFields) => send<Plan>('PATCH', `/session-plans/${id}`, fields)

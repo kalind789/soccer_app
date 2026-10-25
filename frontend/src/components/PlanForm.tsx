@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { PlanFields } from '../api'
+import { useTeams } from '../teamContext'
 
 function today(): string {
   const now = new Date()
@@ -7,7 +8,7 @@ function today(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-const EMPTY: PlanFields = {
+const EMPTY: Omit<PlanFields, 'team_id'> = {
   title: '',
   focus: '',
   location: '',
@@ -18,18 +19,19 @@ const EMPTY: PlanFields = {
 }
 
 type Props = {
-  initial?: PlanFields // Leave out for a new plan; pass the plan's values to edit it.
+  initial?: PlanFields // Leave out for a new plan (in the selected team); pass the plan's values to edit it.
   submitLabel: string
   onSubmit: (fields: PlanFields) => Promise<void>
   onCancel?: () => void
 }
 
-function PlanForm({ initial = EMPTY, submitLabel, onSubmit, onCancel }: Props) {
-  const [fields, setFields] = useState(initial)
+function PlanForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
+  const { teams, selectedTeam } = useTeams()
+  const [fields, setFields] = useState<PlanFields>(initial ?? { ...EMPTY, team_id: selectedTeam?.id ?? 0 })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  function update(name: keyof PlanFields, value: string) {
+  function update(name: Exclude<keyof PlanFields, 'team_id'>, value: string) {
     setFields({ ...fields, [name]: value })
   }
 
@@ -49,6 +51,23 @@ function PlanForm({ initial = EMPTY, submitLabel, onSubmit, onCancel }: Props) {
 
   return (
     <form className="stack" onSubmit={handleSubmit}>
+      <label>
+        Team
+        <select
+          value={fields.team_id || ''}
+          onChange={(e) => setFields({ ...fields, team_id: Number(e.target.value) })}
+          required
+        >
+          <option value="" disabled>
+            Pick a team
+          </option>
+          {teams?.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name} · {team.season}
+            </option>
+          ))}
+        </select>
+      </label>
       <label>
         Title
         <input
