@@ -1327,3 +1327,69 @@ input.search {
   background: var(--primary-soft);
   color: var(--text);
 }
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.auth-tabs button {
+  padding: 8px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.auth-tabs button:hover {
+  background: none;
+  color: var(--text);
+}
+
+.auth-tabs button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
+}
+
+.google-button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.divider {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.divider::before,
+.divider::after {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  content: '';
+}
+
+.error-text {
+  color: var(--danger);
+}
+
+label .hint {
+  margin-top: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
