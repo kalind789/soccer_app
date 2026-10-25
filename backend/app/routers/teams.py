@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.auth import CurrentUser, User
@@ -21,8 +21,6 @@ def get_team_or_404(db: DbSession, team_id: int, user: User) -> Team:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_team(data: TeamCreate, db: DbSession, user: CurrentUser) -> TeamRead:
-    if data.previous_team_id is not None:
-        get_team_or_404(db, data.previous_team_id, user)  # Can only continue one of your own teams.
     team = Team(**data.model_dump(), owner_id=user.id)
     db.add(team)
     db.commit()
@@ -32,12 +30,11 @@ def create_team(data: TeamCreate, db: DbSession, user: CurrentUser) -> TeamRead:
 
 @router.get("")
 def list_teams(db: DbSession, user: CurrentUser) -> list[TeamRead]:
-    # Newest season first. Seasons are text; year-style seasons sort as expected: "2027", "2026–27", "2026".
     query = (
         select(Team)
         .where(Team.owner_id == user.id)
         .options(selectinload(Team.plans))  # For plan_count, in one extra query.
-        .order_by(Team.season.desc(), Team.name)
+        .order_by(Team.name)
     )
     return [TeamRead.model_validate(team) for team in db.scalars(query)]
 
@@ -63,8 +60,5 @@ def delete_team(team_id: int, db: DbSession, user: CurrentUser) -> None:
         team.check_can_delete()
     except TeamNotEmptyError as error:
         raise HTTPException(status.HTTP_409_CONFLICT, str(error))
-    # Next season's team no longer has a "previous" one. (Postgres does this itself with ON DELETE
-    # SET NULL; SQLite doesn't enforce foreign keys by default, so do it here for both.)
-    db.execute(update(Team).where(Team.previous_team_id == team.id).values(previous_team_id=None))
     db.delete(team)
     db.commit()

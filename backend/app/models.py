@@ -20,14 +20,11 @@ class TeamNotEmptyError(Exception):
 
 
 class Drill(Base):
-    """A reusable drill in the coach's library."""
+    """A reusable drill in the shared library: every coach in the app sees and can use every drill."""
 
     __tablename__ = "drills"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # The coach who owns it: their Supabase user id. Indexed, because every list filters by it.
-    # No foreign key to auth.users: that table belongs to Supabase, and tests run on SQLite without it.
-    owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
     objective: Mapped[str] = mapped_column(Text, default="")
@@ -41,21 +38,15 @@ class Drill(Base):
 
 
 class Team(Base):
-    """One team for one season, e.g. "U12 Eagles" in "2026–27".
-
-    Next year is a new Team that points back here with previous_team_id: a fresh start each
-    season, while the link keeps the team's history across the years.
-    """
+    """A team that session plans belong to, e.g. "U12 Eagles 2027". A new year is just a new team."""
 
     __tablename__ = "teams"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # The coach in charge. Ticket 003 replaces this with a list of coaches per team.
+    # The coach in charge: their Supabase user id. Ticket 003 replaces this with a list of coaches.
+    # No foreign key to auth.users: that table belongs to Supabase, and tests run on SQLite without it.
     owner_id: Mapped[uuid.UUID] = mapped_column(index=True)
     name: Mapped[str] = mapped_column(String(100))
-    # Free text, because clubs write seasons differently: "2026", "2026–27", "Fall 2026".
-    season: Mapped[str] = mapped_column(String(20))
-    previous_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"))
 
     plans: Mapped[list["SessionPlan"]] = relationship(back_populates="team")
 

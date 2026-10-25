@@ -30,14 +30,10 @@ class DrillRead(BaseModel):
 
 class TeamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
-    season: str = Field(min_length=1, max_length=20)
-    # Set when starting next season's version of an existing team.
-    previous_team_id: int | None = None
 
 
 class TeamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    season: str | None = Field(default=None, min_length=1, max_length=20)
 
 
 class TeamRef(BaseModel):
@@ -47,11 +43,9 @@ class TeamRef(BaseModel):
 
     id: int
     name: str
-    season: str
 
 
 class TeamRead(TeamRef):
-    previous_team_id: int | None
     plan_count: int
 
 

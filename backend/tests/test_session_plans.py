@@ -8,8 +8,8 @@ PRESSING = {
 }
 
 
-def create_team(client, name="U12 Eagles", season="2026"):
-    return client.post("/teams", json={"name": name, "season": season}).json()
+def create_team(client, name="U12 Eagles"):
+    return client.post("/teams", json={"name": name}).json()
 
 
 def create_plan(client, **overrides):

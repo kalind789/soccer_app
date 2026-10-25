@@ -54,13 +54,13 @@ def test_valid_token_lets_you_in(real_auth):
     assert response.status_code == 200
 
 
-def test_new_drills_belong_to_the_logged_in_user(real_auth):
+def test_new_teams_belong_to_the_logged_in_user(real_auth):
     headers = {"Authorization": f"Bearer {make_token()}"}
-    drill = real_auth.post("/drills", json={"name": "Rondo"}, headers=headers).json()
+    team = real_auth.post("/teams", json={"name": "U12 Eagles"}, headers=headers).json()
 
     other_user = {"Authorization": f"Bearer {make_token(sub=str(uuid.uuid4()))}"}
-    assert real_auth.get(f"/drills/{drill['id']}", headers=headers).status_code == 200
-    assert real_auth.get(f"/drills/{drill['id']}", headers=other_user).status_code == 404
+    assert real_auth.get(f"/teams/{team['id']}", headers=headers).status_code == 200
+    assert real_auth.get(f"/teams/{team['id']}", headers=other_user).status_code == 404
 
 
 def test_no_token_is_401(real_auth):
