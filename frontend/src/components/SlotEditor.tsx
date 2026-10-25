@@ -237,6 +237,7 @@ function SlotEditor({ plan, onSaved }: Props) {
 
       <DrillPicker
         teamName={plan.team.name}
+        teamAgeGroup={plan.team.age_group}
         teamDrills={teamDrills}
         ideas={ideas}
         suggestions={suggestions}

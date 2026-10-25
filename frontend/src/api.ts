@@ -42,16 +42,40 @@ export type DrillSuggestions = {
 export type TeamRef = {
   id: number
   name: string
+  age_group: AgeGroup | null // null only for teams made before age groups existed.
+}
+
+export type Role = 'head_coach' | 'coach'
+
+// Matches MemberRead: one coach on the staff.
+export type Member = {
+  user_id: string
+  name: string
+  email: string
+  role: Role
 }
 
 // Matches TeamRead.
 export type Team = TeamRef & {
   plan_count: number
+  members: Member[] // In the order they joined.
+  my_role: Role | null // The logged-in coach's role on this team.
 }
 
 // Matches TeamCreate and TeamUpdate.
 export type TeamFields = {
   name: string
+  age_group: AgeGroup
+}
+
+// Matches InviteLink and InvitePreview.
+export type InviteLink = { token: string; expires_at: string }
+export type InvitePreview = {
+  team_id: number
+  team_name: string
+  age_group: AgeGroup | null
+  head_coach: string
+  already_member: boolean
 }
 
 // --- Session plans ---
@@ -158,6 +182,16 @@ export const listTeams = () => request<Team[]>('/teams')
 export const createTeam = (fields: TeamFields) => send<Team>('POST', '/teams', fields)
 export const updateTeam = (id: number, fields: TeamFields) => send<Team>('PATCH', `/teams/${id}`, fields)
 export const deleteTeam = (id: number) => send<void>('DELETE', `/teams/${id}`)
+export const removeMember = (teamId: number, userId: string) =>
+  send<void>('DELETE', `/teams/${teamId}/members/${userId}`)
+
+// --- Invite links ---
+
+export const getInviteLink = (teamId: number) => request<InviteLink | null>(`/teams/${teamId}/invite-link`)
+export const createInviteLink = (teamId: number) => send<InviteLink>('POST', `/teams/${teamId}/invite-link`)
+export const turnOffInviteLink = (teamId: number) => send<void>('DELETE', `/teams/${teamId}/invite-link`)
+export const previewInvite = (token: string) => request<InvitePreview>(`/invites/${token}`)
+export const acceptInvite = (token: string) => send<Team>('POST', `/invites/${token}/accept`)
 
 // --- Session plan calls ---
 

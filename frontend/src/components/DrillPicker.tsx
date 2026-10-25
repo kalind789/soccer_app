@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { Drill, DrillSuggestions } from '../api'
 import { drillColor } from '../colors'
-import { GOALS, type Goal } from '../tags'
+import { ageLabel, GOALS, type AgeGroup, type Goal } from '../tags'
 
 type Props = {
   teamName: string
+  teamAgeGroup: AgeGroup | null
   teamDrills: Drill[]
   ideas: Drill[]
   suggestions: DrillSuggestions | null
@@ -14,7 +15,7 @@ type Props = {
 }
 
 // The "Add drills" panel next to a session plan: suggestions first, then everything else.
-function DrillPicker({ teamName, teamDrills, ideas, suggestions, usedCounts, onAdd, onCreate }: Props) {
+function DrillPicker({ teamName, teamAgeGroup, teamDrills, ideas, suggestions, usedCounts, onAdd, onCreate }: Props) {
   const [search, setSearch] = useState('')
   const [goal, setGoal] = useState<Goal | ''>('') // '' = every goal.
   const query = search.trim().toLowerCase()
@@ -30,7 +31,10 @@ function DrillPicker({ teamName, teamDrills, ideas, suggestions, usedCounts, onA
   const timesUsed = new Map(suggestions?.used_before.map((drill) => [drill.id, drill.times_used]))
   const sections = [
     { title: 'Used before', drills: section(suggestions?.used_before ?? []) },
-    { title: 'Recommended for any age', drills: section(suggestions?.recommended ?? []) },
+    {
+      title: teamAgeGroup ? `Recommended for ${ageLabel(teamAgeGroup)}` : 'Recommended for any age',
+      drills: section(suggestions?.recommended ?? []),
+    },
     { title: `${teamName}'s drills`, drills: section(teamDrills) },
     { title: 'Drill ideas', drills: section(ideas) },
   ].filter((s) => s.drills.length > 0)

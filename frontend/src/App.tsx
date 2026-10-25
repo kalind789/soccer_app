@@ -4,6 +4,7 @@ import { AuthProvider } from './components/AuthProvider'
 import { TeamProvider } from './components/TeamProvider'
 import { ToastProvider } from './components/Toast'
 import IdeasPage from './pages/IdeasPage'
+import JoinPage from './pages/JoinPage'
 import LoginPage from './pages/LoginPage'
 import PlanPage from './pages/PlanPage'
 import TeamPage from './pages/TeamPage'
@@ -63,8 +64,10 @@ function LoggedInOnly() {
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:teamId" element={<TeamPage tab="sessions" />} />
           <Route path="/teams/:teamId/drills" element={<TeamPage tab="drills" />} />
+          <Route path="/teams/:teamId/staff" element={<TeamPage tab="staff" />} />
           <Route path="/teams/:teamId/sessions/:planId" element={<PlanPage />} />
           <Route path="/ideas" element={<IdeasPage />} />
+          <Route path="/join/:token" element={<JoinPage />} />
           <Route path="*" element={<div className="empty-page">Page not found.</div>} />
         </Routes>
       </main>

@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import TeamForm from '../components/TeamForm'
 import { teamColor } from '../colors'
 import { teamInitial } from '../format'
+import { ageWithFormat } from '../tags'
 import { useTeams } from '../teamContext'
 import { useToast } from '../toast'
 
@@ -80,24 +81,31 @@ function TeamsPage() {
                 <span className="team-card-text">
                   <strong>{team.name}</strong>
                   <small>
-                    {team.plan_count} {team.plan_count === 1 ? 'session' : 'sessions'}
+                    {team.age_group ? ageWithFormat(team.age_group) : 'No age group yet'} · {team.plan_count}{' '}
+                    {team.plan_count === 1 ? 'session' : 'sessions'}
                   </small>
+                  <small className="staff-line">👥 {team.members.map((m) => m.name || m.email).join(', ')}</small>
                 </span>
               </button>
-              <div className="drill-card-actions">
-                <button className="ghost small" onClick={() => setDialog({ kind: 'edit', team })}>
-                  Edit
-                </button>
-                <button
-                  className="ghost small danger-text"
-                  onClick={() => {
-                    setDeleteError(null)
-                    setDialog({ kind: 'delete', team })
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
+              {/* Only the head coach can change or delete the team. */}
+              {team.my_role === 'head_coach' ? (
+                <div className="drill-card-actions">
+                  <button className="ghost small" onClick={() => setDialog({ kind: 'edit', team })}>
+                    Edit
+                  </button>
+                  <button
+                    className="ghost small danger-text"
+                    onClick={() => {
+                      setDeleteError(null)
+                      setDialog({ kind: 'delete', team })
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <p className="card-footnote">You're a coach on this team</p>
+              )}
             </li>
           ))}
         </ul>
@@ -112,7 +120,7 @@ function TeamsPage() {
       {dialog?.kind === 'edit' && (
         <Modal title="Edit team" onClose={() => setDialog(null)}>
           <TeamForm
-            initial={{ name: dialog.team.name }}
+            initial={{ name: dialog.team.name, age_group: dialog.team.age_group ?? '' }}
             submitLabel="Save changes"
             onSubmit={(fields) => handleEdit(dialog.team, fields)}
             onCancel={() => setDialog(null)}

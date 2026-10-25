@@ -1,13 +1,15 @@
 import { Link, NavLink, useParams } from 'react-router'
 import { teamColor } from '../colors'
 import { teamInitial } from '../format'
+import { ageWithFormat } from '../tags'
 import { useTeams } from '../teamContext'
 import TeamDrills from './TeamDrills'
 import TeamSessions from './TeamSessions'
+import TeamStaff from './TeamStaff'
 
-// One team: its sessions and its own drills, as two tabs. The tab comes from the URL:
-// /teams/3 shows sessions, /teams/3/drills shows drills.
-function TeamPage({ tab }: { tab: 'sessions' | 'drills' }) {
+// One team: its sessions, its own drills and its staff, as tabs. The tab comes from the URL:
+// /teams/3 shows sessions, /teams/3/drills drills, /teams/3/staff the staff.
+function TeamPage({ tab }: { tab: 'sessions' | 'drills' | 'staff' }) {
   const { teamId } = useParams()
   const { teams, error } = useTeams()
   const team = teams?.find((t) => t.id === Number(teamId))
@@ -35,7 +37,13 @@ function TeamPage({ tab }: { tab: 'sessions' | 'drills' }) {
         <span className="team-badge" style={{ background: teamColor(team.id) }} aria-hidden="true">
           {teamInitial(team.name)}
         </span>
-        <h1>{team.name}</h1>
+        <div>
+          <h1>{team.name}</h1>
+          <p className="muted">
+            {team.age_group ? ageWithFormat(team.age_group) : 'No age group yet'} ·{' '}
+            {team.members.map((m) => m.name || m.email).join(', ')}
+          </p>
+        </div>
       </div>
       <nav className="tabs" aria-label={`${team.name} sections`}>
         {/* `end`: only "active" on exactly /teams/3, not on /teams/3/drills. */}
@@ -43,9 +51,12 @@ function TeamPage({ tab }: { tab: 'sessions' | 'drills' }) {
           Sessions
         </NavLink>
         <NavLink to={`/teams/${team.id}/drills`}>Drills</NavLink>
+        <NavLink to={`/teams/${team.id}/staff`}>Staff ({team.members.length})</NavLink>
       </nav>
       {/* key: a different team gets a fresh tab, with nothing left over from the last one. */}
-      {tab === 'sessions' ? <TeamSessions key={team.id} team={team} /> : <TeamDrills key={team.id} team={team} />}
+      {tab === 'sessions' && <TeamSessions key={team.id} team={team} />}
+      {tab === 'drills' && <TeamDrills key={team.id} team={team} />}
+      {tab === 'staff' && <TeamStaff key={team.id} team={team} />}
     </>
   )
 }

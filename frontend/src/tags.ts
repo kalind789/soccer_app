@@ -27,3 +27,12 @@ export const goalLabel = (value: Goal) => GOALS.find((goal) => goal.value === va
 
 // A drill tagged for every age group works at any level, so the app calls it a fundamental.
 export const isForAllAges = (ageGroups: AgeGroup[]) => AGE_GROUPS.every((age) => ageGroups.includes(age.value))
+
+// "U11–U12 · 9v9", for a team's age group.
+export function ageWithFormat(value: AgeGroup): string {
+  const age = AGE_GROUPS.find((a) => a.value === value)
+  return age ? `${age.label} · ${age.format}` : value
+}
+
+// What the app calls each staff role.
+export const roleLabel = (role: 'head_coach' | 'coach') => (role === 'head_coach' ? 'Head coach' : 'Coach')

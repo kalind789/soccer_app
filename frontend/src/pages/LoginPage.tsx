@@ -6,6 +6,7 @@ type Mode = 'log-in' | 'sign-up'
 // Shown instead of the whole app until someone logs in.
 function LoginPage() {
   const [mode, setMode] = useState<Mode>('log-in')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -24,7 +25,13 @@ function LoginPage() {
     }
     setBusy(true)
     if (signingUp) {
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        // full_name is what teammates see on the staff list. The confirmation email links back to this page,
+        // so an invite link (/join/...) still works after confirming.
+        options: { data: { full_name: name.trim() }, emailRedirectTo: window.location.href },
+      })
       if (error) setError(error.message)
       // With email confirmation on (Supabase's default), there's no login until they click the link.
       else if (!data.session) setMessage(`Check ${email} for a link to confirm your account.`)
@@ -41,7 +48,7 @@ function LoginPage() {
     // Leaves our site for Google's sign-in page. Google sends the coach back here, logged in.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href }, // Back to this page, e.g. an invite link.
     })
     if (error) setError(error.message)
   }
@@ -89,6 +96,19 @@ function LoginPage() {
         </p>
 
         <form className="stack" onSubmit={handleSubmit}>
+          {signingUp && (
+            <label>
+              Your name
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                maxLength={200}
+                required
+                placeholder="Shown to the other coaches on your teams"
+              />
+            </label>
+          )}
           <label>
             Email
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
