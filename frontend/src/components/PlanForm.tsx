@@ -19,15 +19,16 @@ const EMPTY: Omit<PlanFields, 'team_id'> = {
 }
 
 type Props = {
-  initial?: PlanFields // Leave out for a new plan (in the selected team); pass the plan's values to edit it.
+  initial?: PlanFields // Leave out for a new plan; pass the plan's values to edit it.
+  teamId?: number // The team a new plan goes in.
   submitLabel: string
   onSubmit: (fields: PlanFields) => Promise<void>
   onCancel?: () => void
 }
 
-function PlanForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
-  const { teams, selectedTeam } = useTeams()
-  const [fields, setFields] = useState<PlanFields>(initial ?? { ...EMPTY, team_id: selectedTeam?.id ?? 0 })
+function PlanForm({ initial, teamId = 0, submitLabel, onSubmit, onCancel }: Props) {
+  const { teams } = useTeams()
+  const [fields, setFields] = useState<PlanFields>(initial ?? { ...EMPTY, team_id: teamId })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 

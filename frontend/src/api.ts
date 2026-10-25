@@ -2,6 +2,7 @@
 // The types below mirror backend/app/schemas.py. If you change one, change the other.
 
 import { supabase } from './supabase'
+import type { AgeGroup, Goal } from './tags'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
@@ -14,6 +15,9 @@ export type Drill = {
   description: string
   objective: string
   archived: boolean
+  team_id: number | null // null for a drill idea, which everyone can use and nobody can edit.
+  age_groups: AgeGroup[]
+  goals: Goal[]
 }
 
 // Matches DrillCreate and DrillUpdate: what a coach can type in.
@@ -21,6 +25,15 @@ export type DrillFields = {
   name: string
   description: string
   objective: string
+  age_groups: AgeGroup[]
+  goals: Goal[]
+}
+
+// Matches UsedDrill and DrillSuggestions.
+export type UsedDrill = Drill & { times_used: number }
+export type DrillSuggestions = {
+  used_before: UsedDrill[] // Most used first.
+  recommended: Drill[] // Fundamental drill ideas the team hasn't used yet.
 }
 
 // --- Teams ---
@@ -124,14 +137,17 @@ function send<T>(method: string, path: string, body?: unknown): Promise<T> {
 
 // --- Drill calls ---
 
-export function listDrills(search = '', includeArchived = false): Promise<Drill[]> {
+export function listTeamDrills(teamId: number, search = '', includeArchived = false): Promise<Drill[]> {
   const params = new URLSearchParams()
   if (search) params.set('search', search)
   if (includeArchived) params.set('include_archived', 'true')
-  return request(`/drills?${params}`)
+  return request(`/teams/${teamId}/drills?${params}`)
 }
 
-export const createDrill = (fields: DrillFields) => send<Drill>('POST', '/drills', fields)
+export const createTeamDrill = (teamId: number, fields: DrillFields) =>
+  send<Drill>('POST', `/teams/${teamId}/drills`, fields)
+export const getDrillSuggestions = (teamId: number) => request<DrillSuggestions>(`/teams/${teamId}/drill-suggestions`)
+export const listDrillIdeas = () => request<Drill[]>('/drill-ideas')
 export const updateDrill = (id: number, fields: DrillFields) => send<Drill>('PATCH', `/drills/${id}`, fields)
 export const archiveDrill = (id: number) => send<Drill>('POST', `/drills/${id}/archive`)
 export const unarchiveDrill = (id: number) => send<Drill>('POST', `/drills/${id}/unarchive`)

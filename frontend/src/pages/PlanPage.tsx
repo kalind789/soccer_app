@@ -38,7 +38,7 @@ function PlanPage() {
       await deletePlan(plan.id)
       void reloadTeams()
       showToast({ message: `Deleted “${plan.title}”` })
-      navigate('/plans')
+      navigate(`/teams/${plan.team.id}`)
     } catch (err) {
       setError((err as Error).message)
       setConfirmingDelete(false)
@@ -51,8 +51,8 @@ function PlanPage() {
         <span className="empty-icon">🔍</span>
         <h2>We couldn't find that session</h2>
         <p className="muted">{error}</p>
-        <Link to="/plans" className="button">
-          Back to sessions
+        <Link to="/teams" className="button">
+          Back to teams
         </Link>
       </div>
     )
@@ -61,8 +61,8 @@ function PlanPage() {
 
   return (
     <>
-      <Link to="/plans" className="back">
-        ← All sessions
+      <Link to={`/teams/${plan.team.id}`} className="back">
+        ← {plan.team.name} sessions
       </Link>
 
       <header className="hero">
@@ -117,7 +117,7 @@ function PlanPage() {
       {confirmingDelete && (
         <Modal title="Delete this session?" onClose={() => setConfirmingDelete(false)}>
           <p>
-            “{plan.title}” will be deleted. Its drills stay in your library, so nothing else is lost.
+            “{plan.title}” will be deleted. Its drills stay in the team's drills, so nothing else is lost.
           </p>
           <div className="row end">
             <button className="secondary" onClick={() => setConfirmingDelete(false)}>

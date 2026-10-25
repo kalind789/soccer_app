@@ -16,7 +16,18 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { createDrill, listDrills, setPlanDrills, type Drill, type DrillFields, type Plan, type SlotEntry } from '../api'
+import {
+  createTeamDrill,
+  getDrillSuggestions,
+  listDrillIdeas,
+  listTeamDrills,
+  setPlanDrills,
+  type Drill,
+  type DrillFields,
+  type DrillSuggestions,
+  type Plan,
+  type SlotEntry,
+} from '../api'
 import { drillColor } from '../colors'
 import { formatMinutes } from '../format'
 import DrillForm from './DrillForm'
@@ -47,17 +58,25 @@ type Props = {
 
 function SlotEditor({ plan, onSaved }: Props) {
   const [rows, setRows] = useState(() => toRows(plan))
-  const [library, setLibrary] = useState<Drill[]>([])
+  const [teamDrills, setTeamDrills] = useState<Drill[]>([])
+  const [ideas, setIdeas] = useState<Drill[]>([])
+  const [suggestions, setSuggestions] = useState<DrillSuggestions | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createdMinutes, setCreatedMinutes] = useState('')
   const [focusKey, setFocusKey] = useState<number | null>(null) // The row whose minutes box gets focus.
 
+  const teamId = plan.team.id
   useEffect(() => {
-    listDrills() // Archived drills are left out: the backend won't let them be newly added.
-      .then(setLibrary)
+    // Three requests at once. Archived drills are left out: the backend won't let them be newly added.
+    Promise.all([listTeamDrills(teamId), listDrillIdeas(), getDrillSuggestions(teamId)])
+      .then(([own, allIdeas, suggested]) => {
+        setTeamDrills(own)
+        setIdeas(allIdeas)
+        setSuggestions(suggested)
+      })
       .catch((err: Error) => setError(err.message))
-  }, [])
+  }, [teamId])
 
   // --- Autosave ---
   // Everything about saving is worked out from two facts: what the rows say now,
@@ -129,8 +148,9 @@ function SlotEditor({ plan, onSaved }: Props) {
   }
 
   async function createAndAdd(fields: DrillFields) {
-    const drill = await createDrill(fields) // Saved to the library right away. If it fails, DrillForm shows why.
-    setLibrary((current) => [...current, drill].sort((a, b) => a.name.localeCompare(b.name)))
+    // Saved to the team's drills right away. If it fails, DrillForm shows why.
+    const drill = await createTeamDrill(teamId, fields)
+    setTeamDrills((current) => [...current, drill].sort((a, b) => a.name.localeCompare(b.name)))
     add(drill, createdMinutes)
     setCreating(false)
     setCreatedMinutes('')
@@ -192,7 +212,7 @@ function SlotEditor({ plan, onSaved }: Props) {
             <p>
               <strong>No drills yet</strong>
             </p>
-            <p className="muted">Pick drills from your library to build the session.</p>
+            <p className="muted">Pick drills from the panel to build the session.</p>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -215,11 +235,19 @@ function SlotEditor({ plan, onSaved }: Props) {
         {(error || saveError) && <p className="error">{error || saveError}</p>}
       </section>
 
-      <DrillPicker library={library} usedCounts={usedCounts} onAdd={(drill) => add(drill)} onCreate={() => setCreating(true)} />
+      <DrillPicker
+        teamName={plan.team.name}
+        teamDrills={teamDrills}
+        ideas={ideas}
+        suggestions={suggestions}
+        usedCounts={usedCounts}
+        onAdd={(drill) => add(drill)}
+        onCreate={() => setCreating(true)}
+      />
 
       {creating && (
         <Modal title="New drill" onClose={() => setCreating(false)}>
-          <p className="muted">It's saved to your drill library too, so you can reuse it in other sessions.</p>
+          <p className="muted">It's saved to {plan.team.name}'s drills too, so you can reuse it in other sessions.</p>
           <DrillForm submitLabel="Create and add to session" onSubmit={createAndAdd} onCancel={() => setCreating(false)}>
             <label>
               Minutes in this session
@@ -296,7 +324,7 @@ function SlotRow({ row, number, autoFocus, onMinutes, onRemove }: SlotRowProps) 
         </button>
         {row.drill.objective && <p className="muted small-text">{row.drill.objective}</p>}
         {open && (
-          <p className="slot-description">{row.drill.description || 'No description yet. Add one in the drill library.'}</p>
+          <p className="slot-description">{row.drill.description || "No description yet. Add one on the team's Drills tab."}</p>
         )}
       </div>
       <div className={valid ? 'stepper' : 'stepper invalid'}>

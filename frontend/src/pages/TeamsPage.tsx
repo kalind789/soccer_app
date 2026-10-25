@@ -15,7 +15,7 @@ type Dialog =
   | { kind: 'delete'; team: Team }
 
 function TeamsPage() {
-  const { teams, selectedTeam, selectTeam, reloadTeams, error } = useTeams()
+  const { teams, reloadTeams, error } = useTeams()
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -24,9 +24,9 @@ function TeamsPage() {
   async function handleCreate(fields: TeamFields) {
     const team = await createTeam(fields)
     await reloadTeams()
-    selectTeam(team.id)
     setDialog(null)
     showToast({ message: `Created ${team.name}` })
+    navigate(`/teams/${team.id}`)
   }
 
   async function handleEdit(team: Team, fields: TeamFields) {
@@ -45,11 +45,6 @@ function TeamsPage() {
     } catch (err) {
       setDeleteError((err as Error).message)
     }
-  }
-
-  function openSessions(team: Team) {
-    selectTeam(team.id)
-    navigate('/plans')
   }
 
   return (
@@ -77,8 +72,8 @@ function TeamsPage() {
       {teams && teams.length > 0 && (
         <ul className="team-grid">
           {teams.map((team) => (
-            <li key={team.id} className={team.id === selectedTeam?.id ? 'team-card selected' : 'team-card'}>
-              <button className="team-card-main" onClick={() => openSessions(team)}>
+            <li key={team.id} className="team-card">
+              <button className="team-card-main" onClick={() => navigate(`/teams/${team.id}`)}>
                 <span className="team-badge" style={{ background: teamColor(team.id) }} aria-hidden="true">
                   {teamInitial(team.name)}
                 </span>
@@ -134,7 +129,7 @@ function TeamsPage() {
             </p>
           ) : (
             <p>
-              {dialog.team.name} has no sessions, so nothing else is lost.
+              {dialog.team.name} has no sessions. Its own drills are deleted with it; drill ideas aren't affected.
             </p>
           )}
           {deleteError && <p className="error">{deleteError}</p>}

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { createPlan, createTeam, listPlans, type PlanFields, type PlanSummary, type TeamFields } from '../api'
+import { createPlan, listPlans, type PlanFields, type PlanSummary, type Team } from '../api'
 import DateTile from '../components/DateTile'
 import Modal from '../components/Modal'
 import PlanForm from '../components/PlanForm'
-import TeamForm from '../components/TeamForm'
 import { formatMinutes, formatTime } from '../format'
 import { useTeams } from '../teamContext'
 
@@ -14,17 +13,17 @@ function todayString(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-function PlansPage() {
-  const { teams, selectedTeam, selectTeam, reloadTeams } = useTeams()
+// The Sessions tab of a team's page.
+function TeamSessions({ team }: { team: Team }) {
+  const { reloadTeams } = useTeams()
   const [plans, setPlans] = useState<PlanSummary[] | null>(null) // null = still loading.
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const navigate = useNavigate()
-  const teamId = selectedTeam?.id
+  const teamId = team.id
 
-  // Load the selected team's plans, again whenever the coach switches team.
+  // Load the team's plans, again if the page switches to another team.
   useEffect(() => {
-    if (teamId === undefined) return
     let ignore = false // Switching teams quickly: only show the latest team's plans.
     listPlans(teamId)
       .then((result) => {
@@ -44,30 +43,8 @@ function PlansPage() {
   async function handleCreate(fields: PlanFields) {
     const plan = await createPlan(fields)
     void reloadTeams() // Session counts changed.
-    navigate(`/plans/${plan.id}`) // Go straight to the new plan to add drills.
+    navigate(`/teams/${teamId}/sessions/${plan.id}`) // Go straight to the new plan to add drills.
   }
-
-  async function handleCreateTeam(fields: TeamFields) {
-    const team = await createTeam(fields)
-    await reloadTeams()
-    selectTeam(team.id)
-  }
-
-  if (teams?.length === 0) {
-    return (
-      <div className="welcome">
-        <span className="empty-icon">🛡️</span>
-        <h1>Start with a team</h1>
-        <p className="muted">
-          Session plans belong to a team, like “U12 Eagles 2027”. You can add more teams anytime.
-        </p>
-        <div className="panel">
-          <TeamForm submitLabel="Create team" onSubmit={handleCreateTeam} />
-        </div>
-      </div>
-    )
-  }
-  if (!selectedTeam) return <div className="loading">Loading…</div>
 
   // Dates are "YYYY-MM-DD" text, which sorts and compares correctly as plain strings.
   const today = todayString()
@@ -76,12 +53,8 @@ function PlansPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">{selectedTeam.name}</p>
-          <h1>Sessions</h1>
-          <p className="muted">Plan each practice, drill by drill.</p>
-        </div>
+      <div className="tab-header">
+        <p className="muted">Plan each practice, drill by drill.</p>
         <button onClick={() => setAdding(true)}>+ New session</button>
       </div>
 
@@ -91,8 +64,8 @@ function PlansPage() {
       {plans?.length === 0 && (
         <div className="empty-page">
           <span className="empty-icon">⚽</span>
-          <h2>Plan {selectedTeam.name}'s first practice</h2>
-          <p className="muted">Pick a date and time, then drop in drills from your library.</p>
+          <h2>Plan {team.name}'s first practice</h2>
+          <p className="muted">Pick a date and time, then add your own drills or drill ideas.</p>
           <button onClick={() => setAdding(true)}>+ New session</button>
         </div>
       )}
@@ -102,7 +75,12 @@ function PlansPage() {
 
       {adding && (
         <Modal title="New session" onClose={() => setAdding(false)}>
-          <PlanForm submitLabel="Create and add drills" onSubmit={handleCreate} onCancel={() => setAdding(false)} />
+          <PlanForm
+            teamId={teamId}
+            submitLabel="Create and add drills"
+            onSubmit={handleCreate}
+            onCancel={() => setAdding(false)}
+          />
         </Modal>
       )}
     </>
@@ -131,7 +109,7 @@ function PlanCard({ plan, muted }: { plan: PlanSummary; muted: boolean }) {
   const over = plan.planned_minutes > plan.duration_minutes
 
   return (
-    <Link to={`/plans/${plan.id}`} className={muted ? 'plan-card past' : 'plan-card'}>
+    <Link to={`/teams/${plan.team.id}/sessions/${plan.id}`} className={muted ? 'plan-card past' : 'plan-card'}>
       <DateTile date={plan.date} muted={muted} />
       <div className="plan-card-body">
         <h3>{plan.title}</h3>
@@ -156,4 +134,4 @@ function PlanCard({ plan, muted }: { plan: PlanSummary; muted: boolean }) {
   )
 }
 
-export default PlansPage
+export default TeamSessions

@@ -1,7 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import type { DrillFields } from '../api'
+import { AGE_GROUPS, GOALS } from '../tags'
+import TagPicker from './TagPicker'
 
-const EMPTY: DrillFields = { name: '', objective: '', description: '' }
+const EMPTY: DrillFields = { name: '', objective: '', description: '', age_groups: [], goals: [] }
 
 type Props = {
   initial?: DrillFields // Leave out for a new drill; pass the drill's values to edit it.
@@ -18,7 +20,7 @@ function DrillForm({ initial = EMPTY, submitLabel, onSubmit, onCancel, children 
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  function update(name: keyof DrillFields, value: string) {
+  function update(name: 'name' | 'objective' | 'description', value: string) {
     setFields({ ...fields, [name]: value }) // Copy everything, then replace one field.
   }
 
@@ -59,6 +61,18 @@ function DrillForm({ initial = EMPTY, submitLabel, onSubmit, onCancel, children 
           placeholder="Setup, rules, progressions, coaching points"
         />
       </label>
+      <TagPicker
+        label="Works on"
+        options={GOALS}
+        selected={fields.goals}
+        onChange={(goals) => setFields({ ...fields, goals })}
+      />
+      <TagPicker
+        label="Age groups"
+        options={AGE_GROUPS}
+        selected={fields.age_groups}
+        onChange={(age_groups) => setFields({ ...fields, age_groups })}
+      />
       {children}
       {error && <p className="error">{error}</p>}
       <div className="row">

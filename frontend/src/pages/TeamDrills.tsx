@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react'
-import { archiveDrill, createDrill, listDrills, unarchiveDrill, updateDrill, type Drill, type DrillFields } from '../api'
+import { Link } from 'react-router'
+import {
+  archiveDrill,
+  createTeamDrill,
+  listTeamDrills,
+  unarchiveDrill,
+  updateDrill,
+  type Drill,
+  type DrillFields,
+  type Team,
+} from '../api'
 import { drillColor } from '../colors'
 import DrillForm from '../components/DrillForm'
+import DrillTags from '../components/DrillTags'
 import Modal from '../components/Modal'
 import { useToast } from '../toast'
 
-function DrillsPage() {
+// The Drills tab of a team's page: the team's own drill library.
+function TeamDrills({ team }: { team: Team }) {
   const [drills, setDrills] = useState<Drill[] | null>(null) // null = still loading.
   const [search, setSearch] = useState('')
   const [includeArchived, setIncludeArchived] = useState(false)
@@ -21,7 +33,7 @@ function DrillsPage() {
     // If the user types fast, an older request can finish after a newer one.
     // `ignore` makes sure only the latest answer is shown.
     let ignore = false
-    listDrills(search, includeArchived)
+    listTeamDrills(team.id, search, includeArchived)
       .then((result) => {
         if (!ignore) {
           setDrills(result)
@@ -34,17 +46,17 @@ function DrillsPage() {
     return () => {
       ignore = true
     }
-  }, [search, includeArchived, reloadCount])
+  }, [team.id, search, includeArchived, reloadCount])
 
   function reload() {
     setReloadCount((count) => count + 1)
   }
 
   async function handleCreate(fields: DrillFields) {
-    const drill = await createDrill(fields)
+    const drill = await createTeamDrill(team.id, fields)
     setAdding(false)
     reload()
-    showToast({ message: `Added “${drill.name}” to your library` })
+    showToast({ message: `Added “${drill.name}” to ${team.name}'s drills` })
   }
 
   async function handleUpdate(fields: DrillFields) {
@@ -70,11 +82,8 @@ function DrillsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1>Drill library</h1>
-          <p className="muted">Build once, reuse in every session. Edits show up everywhere the drill is used.</p>
-        </div>
+      <div className="tab-header">
+        <p className="muted">This team's own drills. Edits show up in every session that uses the drill.</p>
         <button onClick={() => setAdding(true)}>+ New drill</button>
       </div>
 
@@ -111,8 +120,11 @@ function DrillsPage() {
         ) : (
           <div className="empty-page">
             <span className="empty-icon">🧩</span>
-            <h2>Start your drill library</h2>
-            <p className="muted">Add the drills you run most. You'll pick from them when planning sessions.</p>
+            <h2>No drills of your own yet</h2>
+            <p className="muted">
+              Add the drills you run most, or start from the <Link to="/ideas">drill ideas</Link>. You can use those
+              in any session as they are.
+            </p>
             <button onClick={() => setAdding(true)}>+ New drill</button>
           </div>
         ))}
@@ -127,6 +139,7 @@ function DrillsPage() {
                 {drill.archived && <span className="pill">Archived</span>}
               </h3>
               {drill.objective && <p className="goal-line">🎯 {drill.objective}</p>}
+              <DrillTags drill={drill} />
               <p className="drill-card-description">{drill.description || 'No description yet.'}</p>
             </button>
             <div className="drill-card-actions">
@@ -143,14 +156,20 @@ function DrillsPage() {
 
       {adding && (
         <Modal title="New drill" onClose={() => setAdding(false)}>
-          <DrillForm submitLabel="Add to library" onSubmit={handleCreate} onCancel={() => setAdding(false)} />
+          <DrillForm submitLabel="Add drill" onSubmit={handleCreate} onCancel={() => setAdding(false)} />
         </Modal>
       )}
 
       {editing && (
         <Modal title="Edit drill" onClose={() => setEditing(null)}>
           <DrillForm
-            initial={{ name: editing.name, objective: editing.objective, description: editing.description }}
+            initial={{
+              name: editing.name,
+              objective: editing.objective,
+              description: editing.description,
+              age_groups: editing.age_groups,
+              goals: editing.goals,
+            }}
             submitLabel="Save changes"
             onSubmit={handleUpdate}
             onCancel={() => setEditing(null)}
@@ -161,4 +180,4 @@ function DrillsPage() {
   )
 }
 
-export default DrillsPage
+export default TeamDrills

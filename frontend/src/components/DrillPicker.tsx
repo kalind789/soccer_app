@@ -1,19 +1,39 @@
 import { useState } from 'react'
-import type { Drill } from '../api'
+import type { Drill, DrillSuggestions } from '../api'
 import { drillColor } from '../colors'
+import { GOALS, type Goal } from '../tags'
 
 type Props = {
-  library: Drill[]
+  teamName: string
+  teamDrills: Drill[]
+  ideas: Drill[]
+  suggestions: DrillSuggestions | null
   usedCounts: Map<number, number> // drill id → how many times it's already in this plan.
   onAdd: (drill: Drill) => void
   onCreate: () => void
 }
 
-// The "Add drills" panel next to a session plan: search the library and click to add.
-function DrillPicker({ library, usedCounts, onAdd, onCreate }: Props) {
+// The "Add drills" panel next to a session plan: suggestions first, then everything else.
+function DrillPicker({ teamName, teamDrills, ideas, suggestions, usedCounts, onAdd, onCreate }: Props) {
   const [search, setSearch] = useState('')
-  // The library is small, so filtering here is instant, with no request per key press.
-  const matches = library.filter((drill) => drill.name.toLowerCase().includes(search.trim().toLowerCase()))
+  const [goal, setGoal] = useState<Goal | ''>('') // '' = every goal.
+  const query = search.trim().toLowerCase()
+  const matches = (drill: Drill) => drill.name.toLowerCase().includes(query) && (!goal || drill.goals.includes(goal))
+
+  // Each drill shows up once, in the first section it belongs to.
+  const seen = new Set<number>()
+  function section(drills: Drill[]): Drill[] {
+    const result = drills.filter((drill) => !seen.has(drill.id) && matches(drill))
+    result.forEach((drill) => seen.add(drill.id))
+    return result
+  }
+  const timesUsed = new Map(suggestions?.used_before.map((drill) => [drill.id, drill.times_used]))
+  const sections = [
+    { title: 'Used before', drills: section(suggestions?.used_before ?? []) },
+    { title: 'Recommended for any age', drills: section(suggestions?.recommended ?? []) },
+    { title: `${teamName}'s drills`, drills: section(teamDrills) },
+    { title: 'Drill ideas', drills: section(ideas) },
+  ].filter((s) => s.drills.length > 0)
 
   return (
     <aside className="panel picker">
@@ -23,46 +43,70 @@ function DrillPicker({ library, usedCounts, onAdd, onCreate }: Props) {
           + New drill
         </button>
       </div>
-      <input
-        type="search"
-        className="search"
-        placeholder="Search your library"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      <ul className="picker-list">
-        {matches.map((drill) => {
-          const used = usedCounts.get(drill.id) ?? 0
-          return (
-            <li key={drill.id}>
-              <button className="picker-item" onClick={() => onAdd(drill)} title={`Add ${drill.name}`}>
-                <span className="dot" style={{ background: drillColor(drill.id) }} />
-                <span className="picker-text">
-                  <strong>{drill.name}</strong>
-                  {drill.objective && <small>{drill.objective}</small>}
-                </span>
-                {used > 0 && <span className="pill">{used === 1 ? 'In plan' : `${used}× in plan`}</span>}
-                <span className="picker-plus" aria-hidden="true">
-                  +
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-      {library.length === 0 ? (
-        <p className="hint">Your library is empty. Create your first drill and it'll be saved for every session.</p>
-      ) : (
-        matches.length === 0 && (
-          <p className="hint">
-            No drill called “{search}”.{' '}
-            <button className="link" onClick={onCreate}>
-              Create it
-            </button>
-          </p>
-        )
+      <div className="picker-filters">
+        <input
+          type="search"
+          className="search"
+          placeholder="Search drills"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={goal} onChange={(e) => setGoal(e.target.value as Goal | '')} aria-label="Works on">
+          <option value="">All goals</option>
+          {GOALS.map((g) => (
+            <option key={g.value} value={g.value}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="picker-sections">
+        {sections.map(({ title, drills }) => (
+          <section key={title}>
+            <h3 className="picker-section-title">{title}</h3>
+            <ul className="picker-list">
+              {drills.map((drill) => (
+                <li key={drill.id}>
+                  <PickerItem
+                    drill={drill}
+                    inPlan={usedCounts.get(drill.id) ?? 0}
+                    timesUsed={timesUsed.get(drill.id)}
+                    onAdd={() => onAdd(drill)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      {sections.length === 0 && (
+        <p className="hint">
+          No drill matches.{' '}
+          <button className="link" onClick={onCreate}>
+            Create a new one
+          </button>
+        </p>
       )}
     </aside>
+  )
+}
+
+type ItemProps = { drill: Drill; inPlan: number; timesUsed?: number; onAdd: () => void }
+
+function PickerItem({ drill, inPlan, timesUsed, onAdd }: ItemProps) {
+  const note = timesUsed ? `Used in ${timesUsed} ${timesUsed === 1 ? 'session' : 'sessions'}` : drill.objective
+  return (
+    <button className="picker-item" onClick={onAdd} title={`Add ${drill.name}`}>
+      <span className="dot" style={{ background: drillColor(drill.id) }} />
+      <span className="picker-text">
+        <strong>{drill.name}</strong>
+        {note && <small>{note}</small>}
+      </span>
+      {inPlan > 0 && <span className="pill">{inPlan === 1 ? 'In plan' : `${inPlan}× in plan`}</span>}
+      <span className="picker-plus" aria-hidden="true">
+        +
+      </span>
+    </button>
   )
 }
 
