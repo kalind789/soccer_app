@@ -13,3 +13,4 @@ Terms from each step, one file per step. Add your own notes under each one, in y
 9. [Logins and ownership (backend)](09-auth.md)
 10. [Teams and a shared drill library](10-teams.md)
 11. [The login screen](11-login-screen.md)
+12. [Team drills, tags and drill ideas](12-team-drills-and-ideas.md)
