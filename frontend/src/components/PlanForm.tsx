@@ -63,7 +63,7 @@ function PlanForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
           </option>
           {teams?.map((team) => (
             <option key={team.id} value={team.id}>
-              {team.name} · {team.season}
+              {team.name}
             </option>
           ))}
         </select>

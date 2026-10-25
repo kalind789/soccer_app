@@ -5,7 +5,7 @@ import { useTeams } from '../teamContext'
 
 const MANAGE = 'manage'
 
-// The "U12 Eagles · 2026 ▾" picker in the header. A plain <select>, so it works with keyboards,
+// The "U12 Eagles ▾" picker in the header. A plain <select>, so it works with keyboards,
 // screen readers, and the native picker on phones.
 function TeamSwitcher() {
   const { teams, selectedTeam, selectTeam } = useTeams()
@@ -29,7 +29,7 @@ function TeamSwitcher() {
       >
         {teams.map((team) => (
           <option key={team.id} value={team.id}>
-            {team.name} · {team.season}
+            {team.name}
           </option>
         ))}
         <option value={MANAGE}>Manage teams…</option>

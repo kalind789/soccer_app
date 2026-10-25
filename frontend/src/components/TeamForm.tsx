@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import type { TeamFields } from '../api'
-import { currentSeason } from '../format'
 
 type Props = {
   initial?: TeamFields
@@ -9,7 +8,7 @@ type Props = {
   onCancel?: () => void
 }
 
-function TeamForm({ initial = { name: '', season: currentSeason() }, submitLabel, onSubmit, onCancel }: Props) {
+function TeamForm({ initial = { name: '' }, submitLabel, onSubmit, onCancel }: Props) {
   const [fields, setFields] = useState(initial)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -36,17 +35,7 @@ function TeamForm({ initial = { name: '', season: currentSeason() }, submitLabel
           onChange={(e) => setFields({ ...fields, name: e.target.value })}
           maxLength={100}
           required
-          placeholder="e.g. U12 Eagles"
-        />
-      </label>
-      <label>
-        Season
-        <input
-          value={fields.season}
-          onChange={(e) => setFields({ ...fields, season: e.target.value })}
-          maxLength={20}
-          required
-          placeholder="e.g. 2026, 2026–27, or Fall 2026"
+          placeholder="e.g. U12 Eagles 2027"
         />
       </label>
       {error && <p className="error">{error}</p>}

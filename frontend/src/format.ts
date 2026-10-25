@@ -36,25 +36,9 @@ export function toTimeInput(time: string): string {
   return time.slice(0, 5)
 }
 
-// Next year's season label: "2026" → "2027", "2026–27" → "2027–28", "Fall 2026" → "Fall 2027".
-export function nextSeason(season: string): string {
-  const span = season.match(/(\d{4})(\s*[–-]\s*)(\d{2,4})/)
-  if (span) {
-    const [whole, start, dash, end] = span
-    const nextEnd = String(Number(end) + 1).padStart(end.length, '0').slice(-end.length)
-    return season.replace(whole, `${Number(start) + 1}${dash}${nextEnd}`)
-  }
-  return season.replace(/\d{4}/, (year) => String(Number(year) + 1))
-}
-
-// What a new team's season box starts with: this year.
-export function currentSeason(): string {
-  return String(new Date().getFullYear())
-}
-
-// The letter on a team's badge: the first word that isn't an age group, so "U12 Eagles" → "E".
+// The letter on a team's badge: the first word that isn't an age group or a year, so "U12 Eagles 2027" → "E".
 export function teamInitial(name: string): string {
   const words = name.trim().split(/\s+/)
-  const word = words.find((w) => !/^u\d+$/i.test(w)) ?? words[0] ?? '?'
+  const word = words.find((w) => !/^(u\d+|\d+)$/i.test(w)) ?? words[0] ?? '?'
   return word.charAt(0).toUpperCase()
 }

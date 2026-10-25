@@ -27,20 +27,16 @@ export type DrillFields = {
 export type TeamRef = {
   id: number
   name: string
-  season: string // Free text: "2026", "2026–27", "Fall 2026".
 }
 
 // Matches TeamRead.
 export type Team = TeamRef & {
-  previous_team_id: number | null // Last season's version of this team.
   plan_count: number
 }
 
 // Matches TeamCreate and TeamUpdate.
 export type TeamFields = {
   name: string
-  season: string
-  previous_team_id?: number | null
 }
 
 // --- Session plans ---

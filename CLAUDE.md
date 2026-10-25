@@ -28,7 +28,7 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 - `src/api.ts`: the only place that calls the backend. Its types mirror the Pydantic schemas in `backend/app/schemas.py`, so keep them in sync by hand. `VITE_API_URL` overrides the API address (default `http://127.0.0.1:8000`).
 - `src/App.tsx`: header nav, toast provider, team provider, and React Router routes: `/plans`, `/plans/:planId`, `/drills`, `/teams` (`/` redirects to `/plans`).
-- `src/pages/`: one file per route. `PlansPage` (upcoming/past cards with progress), `PlanPage` (hero, edit/delete in modals, drill editor), `DrillsPage` (card grid, search, archive with undo, create/edit in modals), `TeamsPage` (grouped by season, edit, start next season, delete).
+- `src/pages/`: one file per route. `PlansPage` (upcoming/past cards with progress), `PlanPage` (hero, edit/delete in modals, drill editor), `DrillsPage` (card grid, search, archive with undo, create/edit in modals), `TeamsPage` (team cards: edit, delete).
 - `src/components/`: `SlotEditor` (a plan's drills: drag to reorder with dnd-kit, −/+ minute steppers, autosave after 600 ms, flushes pending changes on unmount), `DrillPicker` (searchable click-to-add panel), `Timeline` (colored bar of drill minutes vs session length), `Modal` (native `<dialog>`), `Toast`, `DateTile`, `DrillForm`, `PlanForm` and `TeamForm` (create and edit), `TeamProvider` + `TeamSwitcher` (the header's team picker; the selected team is remembered in localStorage).
 - `src/toast.ts`: `useToast()` hook and context. `src/teamContext.ts`: `useTeams()`. `src/colors.ts`: a stable color per drill or team id. `src/format.ts`: display helpers.
 - `src/index.css`: all styles, "clean and bright" light theme (the user chose it). Design tokens are CSS variables on `:root`. Font: Plus Jakarta Sans (Google Fonts, loaded in `index.html`).
@@ -37,9 +37,10 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 
 ## Domain rules
 
-- Drills and teams have an `owner_id` (the Supabase user id). A session plan belongs to a team (`team_id`, required) and is owned through it. The drill library is per coach, shared across their teams.
-- A team is one season ("U12 Eagles", "2026"). Next season is a new team with `previous_team_id` pointing back, so old plans stay with the old season. A team with plans can't be deleted (409).
-- Every endpoint except `/health` and `/version` needs a login (401 otherwise) and only touches the user's own rows. Someone else's id is a 404, never a 403. Pre-login rows were given the all-zeros owner, so nobody sees them.
+- **One drill library for everyone:** drills have no owner. Any logged-in coach can see, edit and archive any drill (the user chose this).
+- A team is just a name ("U12 Eagles 2027") with an `owner_id` (the Supabase user id). No seasons and no links between teams: a new year is simply a new, unrelated team (the user chose this; keep teams simple). A team with plans can't be deleted (409).
+- A session plan belongs to a team (`team_id`, required) and is owned through it.
+- Every endpoint except `/health` and `/version` needs a login (401 otherwise). Someone else's team or plan is a 404, never a 403.
 - Drills are archived, never deleted. Archived drills are hidden from `GET /drills` unless `?include_archived=true`. Editing a drill changes it in every plan that uses it.
 - A session plan's `end_time` must be after `start_time`. `duration_minutes` is calculated, never stored.
 - `PUT /session-plans/{id}/drills` replaces the ordered list with `{drill_id, minutes}` entries. An archived drill can't be newly added, but one already in the plan can stay.
@@ -59,7 +60,7 @@ Backend (from `backend/`):
 
 ## Current status
 
-Backend: v1 plus drill search, Alembic, CORS, per-slot minutes, logins and teams, with 77 tests passing. Runs on Supabase Postgres (free tier, us-east-1) through the **session pooler** (`aws-0-us-east-1.pooler.supabase.com:5432`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from the user's network. Frontend: session plans, drill library and teams pages, with editing. No frontend tests yet.
+Backend: v1 plus drill search, Alembic, CORS, per-slot minutes, logins and teams, with 75 tests passing. Runs on Supabase Postgres (free tier, us-east-1) through the **session pooler** (`aws-0-us-east-1.pooler.supabase.com:5432`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from the user's network. Frontend: session plans, drill library and teams pages, with editing. No frontend tests yet.
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 

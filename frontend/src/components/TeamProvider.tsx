@@ -51,7 +51,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     saveTeamId(teamId)
   }, [])
 
-  // If the saved team is gone (deleted, or another coach's browser), fall back to the newest team.
+  // If the saved team is gone (deleted, or another coach's browser), fall back to the first team.
   const selectedTeam = teams?.find((team) => team.id === selectedId) ?? teams?.[0] ?? null
 
   return (

@@ -59,7 +59,7 @@ function PlansPage() {
         <span className="empty-icon">🛡️</span>
         <h1>Start with a team</h1>
         <p className="muted">
-          Session plans belong to a team, for one season, like “U12 Eagles” in 2026. You can add more teams anytime.
+          Session plans belong to a team, like “U12 Eagles 2027”. You can add more teams anytime.
         </p>
         <div className="panel">
           <TeamForm submitLabel="Create team" onSubmit={handleCreateTeam} />
@@ -78,9 +78,7 @@ function PlansPage() {
     <>
       <div className="page-header">
         <div>
-          <p className="eyebrow">
-            {selectedTeam.name} · {selectedTeam.season}
-          </p>
+          <p className="eyebrow">{selectedTeam.name}</p>
           <h1>Sessions</h1>
           <p className="muted">Plan each practice, drill by drill.</p>
         </div>

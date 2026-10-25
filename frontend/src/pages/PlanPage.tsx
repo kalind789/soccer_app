@@ -68,9 +68,7 @@ function PlanPage() {
       <header className="hero">
         <DateTile date={plan.date} />
         <div className="hero-text">
-          <p className="eyebrow">
-            {plan.team.name} · {plan.team.season}
-          </p>
+          <p className="eyebrow">{plan.team.name}</p>
           <h1>{plan.title}</h1>
           {plan.focus && <p className="goal-chip">🎯 {plan.focus}</p>}
           <div className="meta">
