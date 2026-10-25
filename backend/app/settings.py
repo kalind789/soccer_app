@@ -21,7 +21,8 @@ def normalize_url(url: str) -> str:
 DATABASE_URL = normalize_url(os.environ.get("DATABASE_URL", "sqlite:///./planner.db"))
 
 # The address the React app runs at. Browsers block it from calling this API unless it's allowed.
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
+# A browser sends it without a trailing slash, so one pasted by mistake would block every request.
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173").rstrip("/")
 
 # Your Supabase project, e.g. https://abcd1234.supabase.co. Used to check login tokens.
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")

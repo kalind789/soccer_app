@@ -1,0 +1,24 @@
+# Render Blueprint: the backend as a free web service. In Render: New → Blueprint → pick this repo.
+# Render reads this file on every push to main and redeploys.
+services:
+  - type: web
+    name: practice-planner-api
+    runtime: python
+    plan: free # Sleeps after 15 minutes without requests; the next request takes about a minute to wake it.
+    region: virginia # Next to the Supabase database (us-east-1), so every query is a short trip.
+    rootDir: backend # Render sees uv.lock here and installs uv.
+    # Migrations run during the build, so the database is up to date before the new code starts.
+    # (Render's "pre-deploy command" is the proper place, but free services don't have it.)
+    buildCommand: uv sync --frozen --no-dev && uv run --no-sync alembic upgrade head
+    startCommand: uv run --no-sync fastapi run app/main.py --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5 # Render needs the full version here.
+      # sync: false means "ask me in the dashboard": the values never go into git.
+      - key: DATABASE_URL # Supabase session pooler string, with the password.
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: FRONTEND_ORIGIN # The Vercel address, e.g. https://soccer-app.vercel.app
+        sync: false
