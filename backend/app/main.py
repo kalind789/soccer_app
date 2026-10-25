@@ -1,14 +1,10 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.database import DbSession
 from app.routers import drills, session_plans
-
-# The address the React app runs at. Browsers block it from calling this API unless it's allowed here.
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
+from app.settings import FRONTEND_ORIGIN
 
 # Tables are created and changed by Alembic migrations: run `uv run alembic upgrade head`.
 app = FastAPI(title="Practice Planner")

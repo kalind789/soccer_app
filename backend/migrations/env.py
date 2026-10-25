@@ -6,7 +6,8 @@ from alembic import context
 from sqlalchemy import create_engine
 
 import app.models  # noqa: F401  Importing the models registers their tables on Base.metadata.
-from app.database import DATABASE_URL, Base, normalize_url
+from app.database import Base
+from app.settings import DATABASE_URL, normalize_url
 
 config = context.config
 if config.config_file_name is not None:
