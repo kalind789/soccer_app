@@ -1,18 +1,22 @@
-# 003: Teams and email invites
+# 003: Shared teams and email invites
 
 **Status:** To do · **Size:** Medium · **Depends on:** 002 (users and auth)
 
 ## Why
 
-A club usually has several coaches for one team. They need to share one drill library and plan sessions together.
+A club usually has several coaches for one team. They need to plan that team's sessions together.
+
+## Already done
+
+Teams exist (one per season, linked to last season's team). Each team has a single owner, the coach who made it, and session plans belong to a team. Drills belong to each coach. This ticket adds more coaches to a team.
 
 ## What
 
-Teams that own drills and plans, and email invites to join a team.
+Team members with roles, and email invites to join a team.
 
 ## Acceptance criteria
 
-1. A user can create a team. Drills and session plans belong to a team, not just to one user.
+1. A team has members, not just an owner. Replace `Team.owner_id` checks with a membership check (one place: `get_team_or_404`).
 2. Roles: **owner** (can invite, remove members, and delete the team) and **coach** (can edit drills and plans).
 3. An owner invites someone by email. They get a link that expires after 7 days and can only be used once.
 4. Opening the link: if you're logged in, you join the team; if not, you sign up or log in first, then join.
@@ -23,7 +27,7 @@ Teams that own drills and plans, and email invites to join a team.
 ## Out of scope
 
 - Player or parent accounts (coaches only for now)
-- Belonging to several teams with separate libraries, unless it turns out easy
+- A shared drill library per team or club (drills stay per coach for now)
 
 ## Notes
 

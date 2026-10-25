@@ -11,3 +11,4 @@ Terms from each step, one file per step. Add your own notes under each one, in y
 7. [Session plans pages and drill times](07-full-site.md)
 8. [Making it feel good to use (UX)](08-ux.md)
 9. [Logins and ownership (backend)](09-auth.md)
+10. [Teams and seasons](10-teams.md)
