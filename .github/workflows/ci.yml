@@ -24,7 +24,7 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.2 # This action only publishes exact versions, not a "v10" tag.
         with:
           enable-cache: true # Reuse downloaded packages between runs.
       # Python version from backend/.python-version; exact packages from uv.lock (--frozen: fail if it's out of date).
