@@ -1296,3 +1296,34 @@ input.search {
 .team-card-text small {
   color: var(--muted);
 }
+
+/* ============================================================
+   Login
+   ============================================================ */
+.header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  background: none;
+  text-decoration: underline;
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--text);
+}

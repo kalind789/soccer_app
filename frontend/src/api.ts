@@ -1,6 +1,8 @@
 // Every call to the backend goes through this file, so components never build URLs themselves.
 // The types below mirror backend/app/schemas.py. If you change one, change the other.
 
+import { supabase } from './supabase'
+
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
 // --- Drills ---
@@ -83,10 +85,21 @@ export type SlotEntry = {
 // --- The one function that talks to the server ---
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  // The login token proves who we are. getSession() refreshes it first if it has expired.
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
   })
+  if (response.status === 401) {
+    // The backend doesn't accept our login anymore: log out, which brings back the login page.
+    await supabase.auth.signOut()
+  }
   if (!response.ok) {
     throw new Error(await errorMessage(response))
   }

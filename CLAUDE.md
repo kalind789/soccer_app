@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A practice planner for soccer coaches: a reusable drill library, plus session plans that put drills in order. v1 is single-user with no login. The user is learning while Claude builds. Work in batches of small, per-step commits, then walk through the code and ask check questions. New terms go in `learning/`, one file per step (index in `learning/README.md`).
+A practice planner for soccer coaches: a reusable drill library, plus session plans that put drills in order. Coaches log in with Supabase Auth (email + password). The user is learning while Claude builds. Work in batches of small, per-step commits, then walk through the code and ask check questions. New terms go in `learning/`, one file per step (index in `learning/README.md`).
 
 ## Stack
 
@@ -27,9 +27,11 @@ A practice planner for soccer coaches: a reusable drill library, plus session pl
 ## Frontend layout
 
 - `src/api.ts`: the only place that calls the backend. Its types mirror the Pydantic schemas in `backend/app/schemas.py`, so keep them in sync by hand. `VITE_API_URL` overrides the API address (default `http://127.0.0.1:8000`).
-- `src/App.tsx`: header nav, toast provider, team provider, and React Router routes: `/plans`, `/plans/:planId`, `/drills`, `/teams` (`/` redirects to `/plans`).
+- `src/App.tsx`: header nav with log out, toast and auth providers, the login gate (`LoggedInOnly`: login page until there's a session), team provider (keyed by user id), and React Router routes: `/plans`, `/plans/:planId`, `/drills`, `/teams` (`/` redirects to `/plans`).
 - `src/pages/`: one file per route. `PlansPage` (upcoming/past cards with progress), `PlanPage` (hero, edit/delete in modals, drill editor), `DrillsPage` (card grid, search, archive with undo, create/edit in modals), `TeamsPage` (team cards: edit, delete).
 - `src/components/`: `SlotEditor` (a plan's drills: drag to reorder with dnd-kit, −/+ minute steppers, autosave after 600 ms, flushes pending changes on unmount), `DrillPicker` (searchable click-to-add panel), `Timeline` (colored bar of drill minutes vs session length), `Modal` (native `<dialog>`), `Toast`, `DateTile`, `DrillForm`, `PlanForm` and `TeamForm` (create and edit), `TeamProvider` + `TeamSwitcher` (the header's team picker; the selected team is remembered in localStorage).
+- `src/supabase.ts`: the Supabase client, used only for login (needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the gitignored `frontend/.env.local`). `src/authContext.ts`: `useSession()`; `components/AuthProvider.tsx` follows `onAuthStateChange`. `pages/LoginPage.tsx`: log in and sign up (email confirmation is on, so sign-up shows "check your email").
+- `src/api.ts` sends `Authorization: Bearer <access token>` on every call, and logs out on a 401.
 - `src/toast.ts`: `useToast()` hook and context. `src/teamContext.ts`: `useTeams()`. `src/colors.ts`: a stable color per drill or team id. `src/format.ts`: display helpers.
 - `src/index.css`: all styles, "clean and bright" light theme (the user chose it). Design tokens are CSS variables on `:root`. Font: Plus Jakarta Sans (Google Fonts, loaded in `index.html`).
 - The UI labels drill `objective` and plan `focus` as "Goal". The user chose to keep the field names and only relabel them.
@@ -64,4 +66,4 @@ Backend: v1 plus drill search, Alembic, CORS, per-slot minutes, logins and teams
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 
-Ticket 002 is in progress: steps 1 to 3 are done (Supabase Postgres, owners, backend login check). The frontend has no login yet, so it gets 401s until step 4 is done. Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 shared teams and invites (teams themselves exist; 003 adds more coaches per team), 004 practice schedules and calendar. 
+Ticket 002 is in progress: steps 1 to 4 are done (Supabase Postgres, owners, backend login check, frontend login). Left: the user tries a real sign-up, optional Google login, then hosting (step 5). Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 shared teams and invites (teams themselves exist; 003 adds more coaches per team), 004 practice schedules and calendar. 

@@ -1,6 +1,6 @@
 # 002: Users, login, and authorization
 
-**Status:** In progress (backend done; frontend login next) · **Size:** Large · **Depends on:** nothing. Blocks 003.
+**Status:** In progress (login works; Google login and hosting left) · **Size:** Large · **Depends on:** nothing. Blocks 003.
 
 ## Why
 
@@ -13,11 +13,11 @@ Accounts and login, with every drill and session plan belonging to an owner.
 ## Acceptance criteria
 
 1. ✅ Move from SQLite to **Supabase Postgres**: `DATABASE_URL` points at it, and the Alembic migrations run cleanly on Postgres. (Done 2026-10-25: session pooler connection, RLS on every table.)
-2. Sign up, log in, and log out (with Supabase Auth: email + password, and maybe Google).
+2. ✅ Sign up, log in, and log out (with Supabase Auth: email + password, and maybe Google). (Email + password done 2026-10-25. Google is optional, later.)
 3. ✅ Drills and session plans get an `owner_id`, added by a migration. Existing rows are assigned to the first user. (Changed: they got an all-zeros "nobody" owner instead, because there were no users yet.)
 4. ✅ **Authentication** (who are you?): every API request must include a valid login token, otherwise 401.
 5. ✅ **Authorization** (what can you touch?): a user can only list, read, and edit their own drills and plans. Someone else's id returns 404, not 403, so it doesn't reveal that the item exists.
-6. The frontend has login and sign-up pages, sends the token with every request, and redirects to login when it gets a 401.
+6. ✅ The frontend has login and sign-up pages, sends the token with every request, and redirects to login when it gets a 401.
 7. ✅ Tests cover: no token → 401, my data → 200, someone else's data → 404.
 
 ## Out of scope
