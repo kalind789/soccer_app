@@ -4,7 +4,7 @@ PLAN = {"title": "Pressing", "date": "2026-11-03", "start_time": "18:00", "end_t
 
 
 def create_team(client, name="U12 Eagles"):
-    response = client.post("/teams", json={"name": name})
+    response = client.post("/teams", json={"name": name, "age_group": "u11-u12"})
     assert response.status_code == 201
     return response.json()
 
@@ -21,8 +21,9 @@ def test_create_team(client):
 
 
 def test_team_needs_a_name(client):
-    assert client.post("/teams", json={"name": ""}).status_code == 422
-    assert client.post("/teams", json={}).status_code == 422
+    assert client.post("/teams", json={"name": "", "age_group": "u11-u12"}).status_code == 422
+    assert client.post("/teams", json={"name": "U12 Eagles"}).status_code == 422  # Age group is required.
+    assert client.post("/teams", json={"name": "U12 Eagles", "age_group": "u99"}).status_code == 422
 
 
 def test_a_coach_can_run_several_teams_sorted_by_name(client):
@@ -97,7 +98,7 @@ def test_plans_show_their_team(client):
     team = create_team(client, "U12 Eagles")
     plan = create_plan(client, team["id"])
 
-    assert plan["team"] == {"id": team["id"], "name": "U12 Eagles"}
+    assert plan["team"] == {"id": team["id"], "name": "U12 Eagles", "age_group": "u11-u12"}
     assert client.get("/session-plans").json()[0]["team"]["name"] == "U12 Eagles"
 
 

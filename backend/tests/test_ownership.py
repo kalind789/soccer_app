@@ -6,12 +6,12 @@ PLAN = {"title": "Pressing", "date": "2026-11-03", "start_time": "18:00", "end_t
 
 
 def create_plan(client):
-    team = client.post("/teams", json={"name": "U12 Eagles"}).json()
+    team = client.post("/teams", json={"name": "U12 Eagles", "age_group": "u11-u12"}).json()
     return client.post("/session-plans", json={**PLAN, "team_id": team["id"]}).json()
 
 
 def test_someone_elses_team_drills_look_missing(client, login_as):
-    team = client.post("/teams", json={"name": "U12 Eagles"}).json()
+    team = client.post("/teams", json={"name": "U12 Eagles", "age_group": "u11-u12"}).json()
     drill = client.post(f"/teams/{team['id']}/drills", json={"name": "Alice's rondo"}).json()
     login_as(BOB)
 
@@ -41,7 +41,7 @@ def test_someone_elses_plan_looks_missing(client, login_as):
 
 
 def test_cant_put_someone_elses_drill_in_your_plan(client, login_as):
-    team = client.post("/teams", json={"name": "U12 Eagles"}).json()
+    team = client.post("/teams", json={"name": "U12 Eagles", "age_group": "u11-u12"}).json()
     alices_drill = client.post(f"/teams/{team['id']}/drills", json={"name": "Alice's rondo"}).json()
     login_as(BOB)
     bobs_plan = create_plan(client)

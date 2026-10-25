@@ -1,11 +1,13 @@
 import datetime as dt
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 # Must match AGE_GROUPS and GOALS in models.py. Literal makes Pydantic reject anything else (422).
 AgeGroup = Literal["u6-u8", "u9-u10", "u11-u12", "u13+"]
 Goal = Literal["warm-up", "possession", "attacking", "finishing", "defending", "transition"]
+Role = Literal["head_coach", "coach"]  # Must match ROLES in models.py.
 
 
 def without_repeats(tags: list[str]) -> list[str]:
@@ -54,15 +56,17 @@ class UsedDrill(DrillRead):
 
 class DrillSuggestions(BaseModel):
     used_before: list[UsedDrill]  # Most used first.
-    recommended: list[DrillRead]  # Fundamental drill ideas this team hasn't used yet.
+    recommended: list[DrillRead]  # Up to 8 unused drill ideas for the team's age group, fundamentals first.
 
 
 class TeamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    age_group: AgeGroup
 
 
 class TeamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
+    age_group: AgeGroup | None = None
 
 
 class TeamRef(BaseModel):
@@ -72,10 +76,39 @@ class TeamRef(BaseModel):
 
     id: int
     name: str
+    age_group: AgeGroup | None
+
+
+class MemberRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
+    name: str
+    email: str
+    role: Role
 
 
 class TeamRead(TeamRef):
     plan_count: int
+    members: list[MemberRead]  # The staff, in the order they joined (so whoever made the team comes first).
+    my_role: Role | None = None  # The logged-in coach's role, so the app knows what to show.
+
+
+class InviteLink(BaseModel):
+    """The secret part of the link. The app turns it into http://.../join/<token>."""
+
+    token: str
+    expires_at: dt.datetime
+
+
+class InvitePreview(BaseModel):
+    """What someone with the link sees before joining."""
+
+    team_id: int
+    team_name: str
+    age_group: AgeGroup | None
+    head_coach: str
+    already_member: bool
 
 
 class SessionPlanCreate(BaseModel):

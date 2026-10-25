@@ -9,7 +9,7 @@ PRESSING = {
 
 
 def create_team(client, name="U12 Eagles"):
-    return client.post("/teams", json={"name": name}).json()
+    return client.post("/teams", json={"name": name, "age_group": "u11-u12"}).json()
 
 
 def create_plan(client, **overrides):

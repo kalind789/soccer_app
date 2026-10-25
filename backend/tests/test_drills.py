@@ -1,11 +1,13 @@
 from conftest import BOB
 
+from app.models import Team
+
 RONDO = {"name": "Rondo 5v2", "description": "Keep-away in a grid", "objective": "Quick passing"}
 ALL_AGES = ["u6-u8", "u9-u10", "u11-u12", "u13+"]
 
 
 def create_team(client, name="U12 Eagles"):
-    return client.post("/teams", json={"name": name}).json()
+    return client.post("/teams", json={"name": name, "age_group": "u11-u12"}).json()
 
 
 def create_drill(client, team_id=None, **overrides):
@@ -184,14 +186,28 @@ def test_team_drills_are_not_drill_ideas(client, add_idea):
 # --- Suggestions ---
 
 
-def test_suggestions_for_a_new_team_are_the_fundamentals(client, add_idea):
+def test_suggestions_recommend_ideas_for_the_teams_age_group(client, add_idea):
     add_idea("Ball Mastery", age_groups=ALL_AGES)
     add_idea("Rondo 5v2", age_groups=["u11-u12", "u13+"])
-    team = create_team(client)
+    add_idea("Red Light, Green Light", age_groups=["u6-u8"])
+    team = create_team(client)  # U11–U12
 
     suggestions = client.get(f"/teams/{team['id']}/drill-suggestions").json()
 
     assert suggestions["used_before"] == []
+    assert [d["name"] for d in suggestions["recommended"]] == ["Ball Mastery", "Rondo 5v2"]
+
+
+def test_a_team_without_an_age_group_gets_the_fundamentals(client, add_idea, TestingSession):
+    add_idea("Ball Mastery", age_groups=ALL_AGES)
+    add_idea("Rondo 5v2", age_groups=["u11-u12", "u13+"])
+    team = create_team(client)
+    with TestingSession() as db:  # Teams made before age groups existed have none.
+        db.get(Team, team["id"]).age_group = None
+        db.commit()
+
+    suggestions = client.get(f"/teams/{team['id']}/drill-suggestions").json()
+
     assert [d["name"] for d in suggestions["recommended"]] == ["Ball Mastery"]
 
 

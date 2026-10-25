@@ -12,10 +12,10 @@ ideas_router = APIRouter(prefix="/drill-ideas", tags=["drills"])
 
 
 def get_drill_or_404(db: DbSession, drill_id: int, user: User) -> Drill:
-    """A drill idea, or a drill from one of the user's teams."""
+    """A drill idea, or a drill from a team the user coaches."""
     drill = db.get(Drill, drill_id)
-    # Another coach's drill gets the same 404 as a missing one, so ids don't reveal what exists.
-    if drill is None or (drill.team is not None and drill.team.owner_id != user.id):
+    # Another team's drill gets the same 404 as a missing one, so ids don't reveal what exists.
+    if drill is None or (drill.team is not None and drill.team.member(user.id) is None):
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Drill {drill_id} not found")
     return drill
 

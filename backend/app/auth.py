@@ -1,7 +1,7 @@
 """Who is making this request? Checks the Supabase login token sent with every request.
 
 Authentication (who are you?) happens here. Authorization (what may you touch?) happens in the
-routers, which only ever look at the current user's own drills and plans.
+routers, which only ever look at the teams the current user coaches.
 """
 
 from dataclasses import dataclass
@@ -20,6 +20,16 @@ from app import settings
 class User:
     id: UUID  # The same id as the user's row in Supabase's auth.users table.
     email: str | None
+    name: str = ""  # Shown to teammates on the staff list.
+
+
+def display_name(claims: dict) -> str:
+    """Google logins send full_name; our sign-up form sends it too. Otherwise use the start of the email."""
+    metadata = claims.get("user_metadata") or {}
+    name = metadata.get("full_name") or metadata.get("name")
+    if name:
+        return str(name)[:200]
+    return (claims.get("email") or "").split("@")[0]
 
 
 # Reads the "Authorization: Bearer <token>" header. auto_error=False so we can send our own 401.
@@ -60,7 +70,7 @@ def get_current_user(credentials: Annotated[HTTPAuthorizationCredentials | None,
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Login isn't set up: SUPABASE_URL is missing")
     try:
         claims = decode_token(credentials.credentials)
-        return User(id=UUID(claims["sub"]), email=claims.get("email"))
+        return User(id=UUID(claims["sub"]), email=claims.get("email"), name=display_name(claims))
     except (jwt.PyJWTError, ValueError):
         raise _unauthorized("Your login has expired or isn't valid. Please log in again.")
 

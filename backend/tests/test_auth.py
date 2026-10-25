@@ -56,7 +56,7 @@ def test_valid_token_lets_you_in(real_auth):
 
 def test_new_teams_belong_to_the_logged_in_user(real_auth):
     headers = {"Authorization": f"Bearer {make_token()}"}
-    team = real_auth.post("/teams", json={"name": "U12 Eagles"}, headers=headers).json()
+    team = real_auth.post("/teams", json={"name": "U12 Eagles", "age_group": "u11-u12"}, headers=headers).json()
 
     other_user = {"Authorization": f"Bearer {make_token(sub=str(uuid.uuid4()))}"}
     assert real_auth.get(f"/teams/{team['id']}", headers=headers).status_code == 200

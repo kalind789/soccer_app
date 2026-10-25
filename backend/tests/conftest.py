@@ -11,9 +11,10 @@ from app.database import Base, get_db
 from app.main import app
 from app.models import Drill
 
-# Two pretend coaches. Tests run as Alice unless they switch with `login_as(BOB)`.
-ALICE = User(id=UUID(int=1), email="alice@example.com")
-BOB = User(id=UUID(int=2), email="bob@example.com")
+# Pretend coaches. Tests run as Alice unless they switch with `login_as(BOB)`.
+ALICE = User(id=UUID(int=1), email="alice@example.com", name="Alice Smith")
+BOB = User(id=UUID(int=2), email="bob@example.com", name="Bob Jones")
+CARLA = User(id=UUID(int=3), email="carla@example.com", name="Carla Diaz")
 
 
 @pytest.fixture

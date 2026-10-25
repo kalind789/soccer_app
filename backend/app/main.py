@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.database import DbSession
-from app.routers import drills, session_plans, teams
+from app.routers import drills, invites, session_plans, teams
 from app.settings import FRONTEND_ORIGIN
 
 # Tables are created and changed by Alembic migrations: run `uv run alembic upgrade head`.
@@ -18,6 +18,7 @@ app.include_router(drills.router)
 app.include_router(drills.ideas_router)
 app.include_router(session_plans.router)
 app.include_router(teams.router)
+app.include_router(invites.router)
 
 
 @app.get("/health")

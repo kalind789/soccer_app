@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import CurrentUser, User
 from app.database import DbSession
-from app.models import ArchivedDrillError, InvalidSessionTimesError, OtherTeamDrillError, SessionPlan, Team
+from app.models import ArchivedDrillError, InvalidSessionTimesError, OtherTeamDrillError, SessionPlan, TeamMember
 from app.routers.drills import get_drill_or_404
 from app.routers.teams import get_team_or_404
 from app.schemas import (
@@ -20,8 +20,8 @@ router = APIRouter(prefix="/session-plans", tags=["session plans"])
 
 def get_plan_or_404(db: DbSession, plan_id: int, user: User) -> SessionPlan:
     plan = db.get(SessionPlan, plan_id)
-    # A plan is yours if its team is yours. Someone else's plan gets the same 404 as a missing one.
-    if plan is None or plan.team.owner_id != user.id:
+    # You can use a plan if you're on its team's staff. Otherwise it gets the same 404 as a missing one.
+    if plan is None or plan.team.member(user.id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Session plan {plan_id} not found")
     return plan
 
@@ -36,7 +36,7 @@ def check_times_or_422(db: DbSession, plan: SessionPlan) -> None:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_plan(data: SessionPlanCreate, db: DbSession, user: CurrentUser) -> SessionPlanRead:
-    get_team_or_404(db, data.team_id, user)  # Can only add plans to your own teams.
+    get_team_or_404(db, data.team_id, user)  # Can only add plans to teams you coach.
     plan = SessionPlan(**data.model_dump())
     check_times_or_422(db, plan)
     db.add(plan)
@@ -47,11 +47,11 @@ def create_plan(data: SessionPlanCreate, db: DbSession, user: CurrentUser) -> Se
 
 @router.get("")
 def list_plans(db: DbSession, user: CurrentUser, team_id: int | None = None) -> list[SessionPlanSummary]:
-    # Only plans whose team belongs to this user. The join lets the database do that filtering.
+    # Only plans of teams this user coaches. The join lets the database do that filtering.
     query = (
         select(SessionPlan)
-        .join(SessionPlan.team)
-        .where(Team.owner_id == user.id)
+        .join(TeamMember, TeamMember.team_id == SessionPlan.team_id)
+        .where(TeamMember.user_id == user.id)
         # Load every plan's slots and team in extra queries, instead of one per plan (the "N+1" problem).
         .options(selectinload(SessionPlan.slots), selectinload(SessionPlan.team))
         .order_by(SessionPlan.date, SessionPlan.start_time)
