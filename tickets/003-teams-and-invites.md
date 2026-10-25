@@ -1,6 +1,6 @@
-# 003: Shared teams and email invites
+# 003: Shared teams and invites
 
-**Status:** To do · **Size:** Medium · **Depends on:** 002 (users and auth)
+**Status:** Done (2026-10-25), with a shareable link instead of email · **Size:** Medium · **Depends on:** 002 (users and auth)
 
 ## Why
 
@@ -16,13 +16,13 @@ Team members with roles, and email invites to join a team.
 
 ## Acceptance criteria
 
-1. A team has members, not just an owner. Replace `Team.owner_id` checks with a membership check (one place: `get_team_or_404`).
-2. Roles: **owner** (can invite, remove members, and delete the team) and **coach** (can edit drills and plans).
-3. An owner invites someone by email. They get a link that expires after 7 days and can only be used once.
-4. Opening the link: if you're logged in, you join the team; if not, you sign up or log in first, then join.
-5. An owner can see pending invites, cancel one, and remove members.
-6. Authorization: only team members can see a team's plans and drills, and only owners can invite.
-7. Tests cover: a valid invite, an expired invite, a used invite, a non-owner trying to invite (403), and a non-member trying to read the team's data (404).
+1. ✅ A team has members, not just an owner. Access is a membership check in one place: `get_team_or_404`.
+2. ✅ Roles: **head coach** (edits and deletes the team, manages the invite link, removes coaches) and **coach** (plans sessions, edits drills, can leave).
+3. ✅ Changed: instead of one email per person, the head coach shares **one invite link** (in a text, email, or group chat). It works for 7 days, for anyone who opens it. A new link or "Turn off" makes the old one stop working. The user chose "a link or something"; no email service needed.
+4. ✅ Opening the link: logged in, you see "Join <team>"; not logged in, you log in or sign up first and come back to the same link.
+5. ✅ The head coach sees the current link, replaces or turns it off, and removes coaches.
+6. ✅ Authorization: only staff can see a team's plans and drills (404 otherwise); only the head coach can manage (403 for coaches).
+7. ✅ Tests (`tests/test_staff.py`): valid, wrong, expired, replaced and turned-off links; coach tries to manage (403); outsider (404); leave; remove; head coach can't leave (409).
 
 ## Out of scope
 
@@ -31,4 +31,4 @@ Team members with roles, and email invites to join a team.
 ## Notes
 
 - Store a **random token** in the invite link, never the user id or email.
-- Sending email: check whether Supabase can do it, or use a service like Resend. Test with a fake email sender.
+- Later, maybe: one-person, single-use email invites (Supabase can send email, or Resend), and handing the head coach role to someone else.
