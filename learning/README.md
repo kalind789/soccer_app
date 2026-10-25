@@ -15,3 +15,4 @@ Terms from each step, one file per step. Add your own notes under each one, in y
 11. [The login screen](11-login-screen.md)
 12. [Team drills, tags and drill ideas](12-team-drills-and-ideas.md)
 13. [Coaching staff and invite links](13-staff-and-invites.md)
+14. [Deployment](14-deployment.md)

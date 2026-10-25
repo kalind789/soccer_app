@@ -51,9 +51,16 @@ npm run dev
 
 Tests (no Supabase needed): `cd backend && uv run pytest`
 
+## Deployment
+
+Both hosts redeploy on every push to `main`, after CI.
+
+- **Backend on Render** (free web service): settings are in [`render.yaml`](render.yaml). The build installs exactly what `uv.lock` lists and runs the migrations, and Render waits for `/health` before switching traffic over. In the dashboard, set `DATABASE_URL`, `SUPABASE_URL` and `FRONTEND_ORIGIN`.
+- **Frontend on Vercel**: root directory `frontend`. In the dashboard, set `VITE_API_URL`, `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. [`vercel.json`](frontend/vercel.json) sends every path to `index.html`, so links like `/join/...` work.
+
 ## Roadmap
 
-See [`tickets/`](tickets/README.md): deployment, drag-and-drop drill diagrams, and practice schedules with a calendar.
+See [`tickets/`](tickets/README.md): drag-and-drop drill diagrams, and practice schedules with a calendar.
 
 ## Project layout
 

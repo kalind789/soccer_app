@@ -1,6 +1,6 @@
 # 002: Users, login, and authorization
 
-**Status:** In progress (login works; Google login and hosting left) · **Size:** Large · **Depends on:** nothing. Blocks 003.
+**Status:** In progress (login works; hosting set up in `render.yaml` + `frontend/vercel.json`; Google login left) · **Size:** Large · **Depends on:** nothing. Blocks 003.
 
 ## Why
 
