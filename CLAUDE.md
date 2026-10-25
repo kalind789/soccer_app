@@ -54,8 +54,8 @@ Backend (from `backend/`):
 
 ## Current status
 
-Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 42 tests passing. Frontend: session plans and drill library pages, with editing. No frontend tests yet.
+Backend: v1 plus drill search, Alembic, CORS and per-slot minutes, with 43 tests passing. Runs on Supabase Postgres (free tier, us-east-1) through the **session pooler** (`aws-0-us-east-1.pooler.supabase.com:5432`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from the user's network. Frontend: session plans and drill library pages, with editing. No frontend tests yet.
 
 The user often runs their own dev servers on 8000 and 5173 against the real `planner.db`. Verify on other ports with a scratch `DATABASE_URL`.
 
-Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. 
+Ticket 002 is in progress (step 1 of 5, Supabase Postgres, is done). Planned work is in `tickets/` (index in `tickets/README.md`): 001 drill diagram editor, 002 users and auth (Supabase), 003 teams and invites, 004 practice schedules and calendar. 

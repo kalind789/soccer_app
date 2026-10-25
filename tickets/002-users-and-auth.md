@@ -1,6 +1,6 @@
 # 002: Users, login, and authorization
 
-**Status:** To do · **Size:** Large · **Depends on:** nothing. Blocks 003.
+**Status:** In progress (step 1 of 5 done: Supabase Postgres) · **Size:** Large · **Depends on:** nothing. Blocks 003.
 
 ## Why
 
@@ -12,7 +12,7 @@ Accounts and login, with every drill and session plan belonging to an owner.
 
 ## Acceptance criteria
 
-1. Move from SQLite to **Supabase Postgres**: `DATABASE_URL` points at it, and the Alembic migrations run cleanly on Postgres.
+1. ✅ Move from SQLite to **Supabase Postgres**: `DATABASE_URL` points at it, and the Alembic migrations run cleanly on Postgres. (Done 2026-10-25: session pooler connection, RLS on every table.)
 2. Sign up, log in, and log out (with Supabase Auth: email + password, and maybe Google).
 3. Drills and session plans get an `owner_id`, added by a migration. Existing rows are assigned to the first user.
 4. **Authentication** (who are you?): every API request must include a valid login token, otherwise 401.
