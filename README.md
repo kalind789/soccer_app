@@ -1,5 +1,7 @@
 # ⚽ Practice Planner
 
+[![CI](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml/badge.svg)](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml)
+
 A full-stack web app for soccer coaches. Build a reusable **drill library** and plan **practice sessions**: drills put in order, each with its own time for that session.
 
 **Stack:** Python · FastAPI · SQLAlchemy 2.0 · Pydantic · Alembic · SQLite · React 19 · TypeScript · Vite · pytest

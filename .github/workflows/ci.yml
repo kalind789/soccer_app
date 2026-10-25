@@ -1,0 +1,52 @@
+# Continuous integration: on every push and pull request, GitHub runs the backend tests and
+# checks that the frontend lints and builds. A red ✗ on a commit or pull request means "don't merge".
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch cancels the older, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The workflow only needs to read the code.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true # Reuse downloaded packages between runs.
+      # Python version from backend/.python-version; exact packages from uv.lock (--frozen: fail if it's out of date).
+      - run: uv sync --frozen
+      # Includes test_migrations.py, which fails if a model changed without a migration.
+      # No .env here: tests use an in-memory SQLite database and fake logins, so no secrets are needed.
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # npm ci installs exactly what package-lock.json says, from scratch.
+      - run: npm ci
+      - run: npm run lint
+      # Type-checks with TypeScript, then builds. The Supabase settings are only read in the browser.
+      - run: npm run build

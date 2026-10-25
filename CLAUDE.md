@@ -55,6 +55,8 @@ A practice planner for soccer coaches: teams, each with session plans that put d
 
 ## Commands
 
+CI (`.github/workflows/ci.yml`, GitHub Actions) runs on every push to `main` and every pull request: backend `uv sync --frozen` + `uv run pytest`, frontend `npm ci` + `npm run lint` + `npm run build`. It needs no secrets. Keep it green.
+
 Frontend (from `frontend/`): `npm run dev`, then open http://localhost:5173 (the backend must be running too). `npm run build` type-checks and builds.
 
 Backend (from `backend/`):
