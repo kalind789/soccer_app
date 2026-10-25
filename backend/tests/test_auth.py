@@ -45,7 +45,7 @@ def make_token(key=OUR_KEY, algorithm="ES256", **changes) -> str:
 
 def get_drills(client, token=None):
     headers = {"Authorization": f"Bearer {token}"} if token else {}
-    return client.get("/drills", headers=headers)
+    return client.get("/drill-ideas", headers=headers)
 
 
 def test_valid_token_lets_you_in(real_auth):

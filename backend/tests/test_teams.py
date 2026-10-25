@@ -131,3 +131,12 @@ def test_cant_move_a_plan_to_someone_elses_team(client, login_as):
     response = client.patch(f"/session-plans/{plan['id']}", json={"team_id": bobs_team["id"]})
 
     assert response.status_code == 404
+
+
+def test_deleting_a_team_deletes_its_drills(client):
+    team = create_team(client)
+    drill = client.post(f"/teams/{team['id']}/drills", json={"name": "Rondo"}).json()
+
+    client.delete(f"/teams/{team['id']}")
+
+    assert client.get(f"/drills/{drill['id']}").status_code == 404

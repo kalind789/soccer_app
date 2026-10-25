@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import CurrentUser, User
 from app.database import DbSession
-from app.models import ArchivedDrillError, InvalidSessionTimesError, SessionPlan, Team
+from app.models import ArchivedDrillError, InvalidSessionTimesError, OtherTeamDrillError, SessionPlan, Team
 from app.routers.drills import get_drill_or_404
 from app.routers.teams import get_team_or_404
 from app.schemas import (
@@ -88,10 +88,13 @@ def delete_plan(plan_id: int, db: DbSession, user: CurrentUser) -> None:
 @router.put("/{plan_id}/drills")
 def set_plan_drills(plan_id: int, data: SessionDrillsUpdate, db: DbSession, user: CurrentUser) -> SessionPlanRead:
     plan = get_plan_or_404(db, plan_id, user)
-    drills = [(get_drill_or_404(db, entry.drill_id), entry.minutes) for entry in data.drills]
+    drills = [(get_drill_or_404(db, entry.drill_id, user), entry.minutes) for entry in data.drills]
     try:
         plan.set_drills(drills)
     except ArchivedDrillError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error))
+    except OtherTeamDrillError as error:
+        # Each team has its own drills. Another team's drill looks missing, like someone else's.
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(error))
     db.commit()
     return SessionPlanRead.model_validate(plan)

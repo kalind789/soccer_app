@@ -15,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(drills.router)
+app.include_router(drills.ideas_router)
 app.include_router(session_plans.router)
 app.include_router(teams.router)
 

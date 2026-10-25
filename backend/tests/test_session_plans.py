@@ -105,8 +105,9 @@ def test_delete_plan(client):
     assert client.get(f"/session-plans/{plan['id']}").status_code == 404
 
 
-def create_drill(client, name):
-    return client.post("/drills", json={"name": name}).json()
+def create_drill(client, plan, name):
+    """A drill in the plan's team's library."""
+    return client.post(f"/teams/{plan['team']['id']}/drills", json={"name": name}).json()
 
 
 def set_drills(client, plan_id, drill_ids, minutes=10):
@@ -125,8 +126,8 @@ def test_new_plan_has_no_drills(client):
 
 def test_set_drills_keeps_order(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
-    shooting = create_drill(client, "Shooting")
+    rondo = create_drill(client, plan, "Rondo")
+    shooting = create_drill(client, plan, "Shooting")
 
     response = set_drills(client, plan["id"], [shooting["id"], rondo["id"]])
 
@@ -138,8 +139,8 @@ def test_set_drills_keeps_order(client):
 
 def test_set_drills_replaces_previous_list(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
-    shooting = create_drill(client, "Shooting")
+    rondo = create_drill(client, plan, "Rondo")
+    shooting = create_drill(client, plan, "Shooting")
     set_drills(client, plan["id"], [rondo["id"], shooting["id"]])
 
     response = set_drills(client, plan["id"], [shooting["id"]])
@@ -149,8 +150,8 @@ def test_set_drills_replaces_previous_list(client):
 
 def test_set_drills_allows_repeats(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
-    shooting = create_drill(client, "Shooting")
+    rondo = create_drill(client, plan, "Rondo")
+    shooting = create_drill(client, plan, "Shooting")
 
     response = set_drills(client, plan["id"], [rondo["id"], shooting["id"], rondo["id"]])
 
@@ -165,7 +166,7 @@ def test_set_drills_unknown_drill_returns_404(client):
 
 def test_set_drills_rejects_newly_added_archived_drill(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
     client.post(f"/drills/{rondo['id']}/archive")
 
     response = set_drills(client, plan["id"], [rondo["id"]])
@@ -175,8 +176,8 @@ def test_set_drills_rejects_newly_added_archived_drill(client):
 
 def test_archived_drill_already_in_plan_can_stay(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
-    shooting = create_drill(client, "Shooting")
+    rondo = create_drill(client, plan, "Rondo")
+    shooting = create_drill(client, plan, "Shooting")
     set_drills(client, plan["id"], [rondo["id"]])
     client.post(f"/drills/{rondo['id']}/archive")
 
@@ -188,7 +189,7 @@ def test_archived_drill_already_in_plan_can_stay(client):
 
 def test_editing_a_drill_shows_up_in_plans(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
     set_drills(client, plan["id"], [rondo["id"]])
 
     client.patch(f"/drills/{rondo['id']}", json={"name": "Rondo 5v2"})
@@ -199,7 +200,7 @@ def test_editing_a_drill_shows_up_in_plans(client):
 
 def test_deleting_plan_keeps_its_drills(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
     set_drills(client, plan["id"], [rondo["id"]])
 
     client.delete(f"/session-plans/{plan['id']}")
@@ -209,8 +210,8 @@ def test_deleting_plan_keeps_its_drills(client):
 
 def test_each_slot_has_its_own_minutes(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
-    shooting = create_drill(client, "Shooting")
+    rondo = create_drill(client, plan, "Rondo")
+    shooting = create_drill(client, plan, "Shooting")
     entries = [{"drill_id": rondo["id"], "minutes": 15}, {"drill_id": shooting["id"], "minutes": 25}]
 
     response = client.put(f"/session-plans/{plan['id']}/drills", json={"drills": entries})
@@ -220,9 +221,10 @@ def test_each_slot_has_its_own_minutes(client):
 
 
 def test_same_drill_can_run_different_times_in_different_plans(client):
-    monday = create_plan(client, title="Monday")
-    thursday = create_plan(client, title="Thursday")
-    rondo = create_drill(client, "Rondo 4v2")
+    team = create_team(client)
+    monday = create_plan(client, title="Monday", team_id=team["id"])
+    thursday = create_plan(client, title="Thursday", team_id=team["id"])
+    rondo = create_drill(client, monday, "Rondo 4v2")
 
     set_drills(client, monday["id"], [rondo["id"]], minutes=15)
     set_drills(client, thursday["id"], [rondo["id"]], minutes=20)
@@ -233,7 +235,7 @@ def test_same_drill_can_run_different_times_in_different_plans(client):
 
 def test_planned_minutes_can_be_more_than_the_session(client):
     plan = create_plan(client)  # 90 minutes long
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
 
     response = set_drills(client, plan["id"], [rondo["id"]], minutes=120)
 
@@ -243,17 +245,34 @@ def test_planned_minutes_can_be_more_than_the_session(client):
 
 def test_minutes_must_be_positive(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
 
     assert set_drills(client, plan["id"], [rondo["id"]], minutes=0).status_code == 422
 
 
 def test_plan_list_shows_progress(client):
     plan = create_plan(client)
-    rondo = create_drill(client, "Rondo")
+    rondo = create_drill(client, plan, "Rondo")
     set_drills(client, plan["id"], [rondo["id"], rondo["id"]], minutes=15)
 
     [summary] = client.get("/session-plans").json()
 
     assert summary["drill_count"] == 2
     assert summary["planned_minutes"] == 30
+
+
+def test_can_use_a_drill_idea_in_a_plan(client, add_idea):
+    plan = create_plan(client)
+    idea_id = add_idea("Rondo 4v1")
+
+    response = set_drills(client, plan["id"], [idea_id])
+
+    assert drill_names(response.json()) == ["Rondo 4v1"]
+
+
+def test_cant_use_another_teams_drill(client):
+    eagles_plan = create_plan(client)
+    hawks_plan = create_plan(client, team_id=create_team(client, "U10 Hawks")["id"])
+    hawks_drill = create_drill(client, hawks_plan, "Hawks rondo")
+
+    assert set_drills(client, eagles_plan["id"], [hawks_drill["id"]]).status_code == 404

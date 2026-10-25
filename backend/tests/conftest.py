@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.auth import User, get_current_user
 from app.database import Base, get_db
 from app.main import app
+from app.models import Drill
 
 # Two pretend coaches. Tests run as Alice unless they switch with `login_as(BOB)`.
 ALICE = User(id=UUID(int=1), email="alice@example.com")
@@ -30,7 +31,7 @@ def login_as(current_user):
 
 
 @pytest.fixture
-def client(current_user):
+def TestingSession():
     # A fresh in-memory database for every test. StaticPool keeps it on one
     # connection so it doesn't vanish between requests.
     engine = create_engine(
@@ -39,8 +40,25 @@ def client(current_user):
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    TestingSession = sessionmaker(bind=engine)
+    return sessionmaker(bind=engine)
 
+
+@pytest.fixture
+def add_idea(TestingSession):
+    """Drill ideas come from a migration, and tests skip migrations, so tests add their own."""
+
+    def add(name: str, age_groups: list[str] = [], goals: list[str] = []) -> int:
+        with TestingSession() as db:
+            idea = Drill(name=name, age_groups=age_groups, goals=goals)
+            db.add(idea)
+            db.commit()
+            return idea.id
+
+    return add
+
+
+@pytest.fixture
+def client(current_user, TestingSession):
     def override_get_db():
         db = TestingSession()
         try:

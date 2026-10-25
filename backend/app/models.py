@@ -1,10 +1,15 @@
 import datetime as dt
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import JSON, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+# Drill tags. Age groups follow U.S. Soccer's game formats: 4v4, 7v7, 9v9, then 11v11.
+AGE_GROUPS = ("u6-u8", "u9-u10", "u11-u12", "u13+")
+GOALS = ("warm-up", "possession", "attacking", "finishing", "defending", "transition")
 
 
 class InvalidSessionTimesError(Exception):
@@ -19,16 +24,34 @@ class TeamNotEmptyError(Exception):
     """Raised when deleting a team that still has session plans."""
 
 
+class OtherTeamDrillError(Exception):
+    """Raised when another team's drill is newly added to a session plan."""
+
+
 class Drill(Base):
-    """A reusable drill in the shared library: every coach in the app sees and can use every drill."""
+    """A drill in one team's library, or a drill idea (no team) that every team can use.
+
+    Drill ideas come with the app (a migration adds them), and nobody can edit them.
+    """
 
     __tablename__ = "drills"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"), index=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
     objective: Mapped[str] = mapped_column(Text, default="")
     archived: Mapped[bool] = mapped_column(default=False)
+    # Tags, as lists of the values in AGE_GROUPS and GOALS. A JSON list is enough: the lists are
+    # short, and filtering happens in the browser.
+    age_groups: Mapped[list[str]] = mapped_column(JSON, default=list)
+    goals: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    team: Mapped["Team | None"] = relationship(back_populates="drills")
+
+    @property
+    def is_idea(self) -> bool:
+        return self.team_id is None
 
     def archive(self) -> None:
         self.archived = True
@@ -49,6 +72,8 @@ class Team(Base):
     name: Mapped[str] = mapped_column(String(100))
 
     plans: Mapped[list["SessionPlan"]] = relationship(back_populates="team")
+    # The team's own drill library. Deleting a team (only possible with no plans) deletes its drills.
+    drills: Mapped[list[Drill]] = relationship(back_populates="team", cascade="all, delete-orphan")
 
     @property
     def plan_count(self) -> int:
@@ -109,8 +134,12 @@ class SessionPlan(Base):
         """
         already_in_plan = {slot.drill_id for slot in self.slots}
         for drill, _ in drills:
-            if drill.archived and drill.id not in already_in_plan:
+            if drill.id in already_in_plan:
+                continue  # Already there, so it can stay even if it's archived or from another team.
+            if drill.archived:
                 raise ArchivedDrillError(f"Drill {drill.id} is archived")
+            if not drill.is_idea and drill.team_id != self.team_id:
+                raise OtherTeamDrillError(f"Drill {drill.id} not found")
         self.slots = [
             SessionDrill(drill=drill, minutes=minutes, position=i)
             for i, (drill, minutes) in enumerate(drills)

@@ -1,12 +1,27 @@
 import datetime as dt
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+# Must match AGE_GROUPS and GOALS in models.py. Literal makes Pydantic reject anything else (422).
+AgeGroup = Literal["u6-u8", "u9-u10", "u11-u12", "u13+"]
+Goal = Literal["warm-up", "possession", "attacking", "finishing", "defending", "transition"]
+
+
+def without_repeats(tags: list[str]) -> list[str]:
+    return list(dict.fromkeys(tags))  # dict keys are unique and keep their order.
+
+
+AgeGroups = Annotated[list[AgeGroup], AfterValidator(without_repeats)]
+Goals = Annotated[list[Goal], AfterValidator(without_repeats)]
 
 
 class DrillCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = ""
     objective: str = ""
+    age_groups: AgeGroups = []
+    goals: Goals = []
 
 
 class DrillUpdate(BaseModel):
@@ -15,6 +30,8 @@ class DrillUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = None
     objective: str | None = None
+    age_groups: AgeGroups | None = None
+    goals: Goals | None = None
 
 
 class DrillRead(BaseModel):
@@ -26,6 +43,18 @@ class DrillRead(BaseModel):
     description: str
     objective: str
     archived: bool
+    team_id: int | None  # None for a drill idea.
+    age_groups: list[str]
+    goals: list[str]
+
+
+class UsedDrill(DrillRead):
+    times_used: int  # In this team's session plans.
+
+
+class DrillSuggestions(BaseModel):
+    used_before: list[UsedDrill]  # Most used first.
+    recommended: list[DrillRead]  # Fundamental drill ideas this team hasn't used yet.
 
 
 class TeamCreate(BaseModel):
