@@ -57,6 +57,8 @@ A practice planner for soccer coaches: teams, each with session plans that put d
 
 CI (`.github/workflows/ci.yml`, GitHub Actions) runs on every push to `main` and every pull request: backend `uv sync --frozen` + `uv run pytest`, frontend `npm ci` + `npm run lint` + `npm run build`. It needs no secrets. Keep it green.
 
+Workflow: `main` is live (every push deploys to the coaches), so never push to it directly. Work on a branch (`git switch -c <short-name>`), commit in small steps, push and open a PR (`gh pr create`), and merge on GitHub once CI is green and the user has checked it. A migration goes live at merge, so read it carefully in the PR. Vercel preview deploys of branches don't fully work (CORS and Supabase redirects allow only the main address): test branches locally.
+
 Hosting (both redeploy on every push to `main`): the backend is on Render, set up by `render.yaml`. It runs on the free plan in the virginia region. The build runs `uv sync --frozen --no-dev` and then `alembic upgrade head`, because free services have no pre-deploy command. The start command is `fastapi run`, and the health check is `/health`. Its secrets are set in the Render dashboard. The frontend is on Vercel, with root directory `frontend`. Its `VITE_*` variables are set in the Vercel dashboard and are baked in at build time, so change them, then redeploy. `frontend/vercel.json` rewrites every path to `index.html`. Supabase Auth → URL Configuration must list the Vercel address: it is the Site URL, and `<vercel>/**` is one of the Redirect URLs.
 
 Frontend (from `frontend/`): `npm run dev`, then open http://localhost:5173 (the backend must be running too). `npm run build` type-checks and builds.
