@@ -16,3 +16,4 @@ Terms from each step, one file per step. Add your own notes under each one, in y
 12. [Team drills, tags and drill ideas](12-team-drills-and-ideas.md)
 13. [Coaching staff and invite links](13-staff-and-invites.md)
 14. [Deployment](14-deployment.md)
+15. [API crash course](15-api-crash-course.md)
