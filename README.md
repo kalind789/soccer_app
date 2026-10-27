@@ -1,3 +1,5 @@
+https://soccer-app-z41g.vercel.app/
+
 # ⚽ Practice Planner
 
 [![CI](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml/badge.svg)](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml)
