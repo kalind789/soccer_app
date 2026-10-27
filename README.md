@@ -1,8 +1,8 @@
-https://soccer-app-z41g.vercel.app/
-
 # ⚽ Practice Planner
 
 [![CI](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml/badge.svg)](https://github.com/kalind789/soccer_app/actions/workflows/ci.yml)
+
+**Live:** [soccer-app-z41g.vercel.app](https://soccer-app-z41g.vercel.app/) (the backend runs on a free plan, so the first load after a quiet spell can take about a minute)
 
 A full-stack web app for youth soccer coaching staffs. Coaches plan **practice sessions** for each team, drill by drill. Each team keeps its own **drill library**, and a built-in set of **drill ideas** is organized by U.S. Soccer age group and practice goal.
 
@@ -55,7 +55,7 @@ Tests (no Supabase needed): `cd backend && uv run pytest`
 
 ## Deployment
 
-Both hosts redeploy on every push to `main`, after CI.
+Both hosts redeploy on every push to `main`, so `main` is what coaches use. Changes go through a branch and a pull request, and are merged once CI passes. A migration runs against the real database when its pull request is merged.
 
 - **Backend on Render** (free web service): settings are in [`render.yaml`](render.yaml). The build installs exactly what `uv.lock` lists and runs the migrations, and Render waits for `/health` before switching traffic over. In the dashboard, set `DATABASE_URL`, `SUPABASE_URL` and `FRONTEND_ORIGIN`.
 - **Frontend on Vercel**: root directory `frontend`. In the dashboard, set `VITE_API_URL`, `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. [`vercel.json`](frontend/vercel.json) sends every path to `index.html`, so links like `/join/...` work.
