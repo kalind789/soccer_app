@@ -98,19 +98,28 @@ function DrillPicker({ teamName, teamAgeGroup, teamDrills, ideas, suggestions, u
 type ItemProps = { drill: Drill; inPlan: number; timesUsed?: number; onAdd: () => void }
 
 function PickerItem({ drill, inPlan, timesUsed, onAdd }: ItemProps) {
+  const [open, setOpen] = useState(false) // Show the drill's description?
   const note = timesUsed ? `Used in ${timesUsed} ${timesUsed === 1 ? 'session' : 'sessions'}` : drill.objective
   return (
-    <button className="picker-item" onClick={onAdd} title={`Add ${drill.name}`}>
-      <span className="dot" style={{ background: drillColor(drill.id) }} />
-      <span className="picker-text">
-        <strong>{drill.name}</strong>
-        {note && <small>{note}</small>}
-      </span>
-      {inPlan > 0 && <span className="pill">{inPlan === 1 ? 'In plan' : `${inPlan}× in plan`}</span>}
-      <span className="picker-plus" aria-hidden="true">
+    <div className="picker-item">
+      <button
+        className="picker-item-main"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        title={`${drill.name} details`}
+      >
+        <span className="dot" style={{ background: drillColor(drill.id) }} />
+        <span className="picker-text">
+          <strong>{drill.name}</strong>
+          {note && <small>{note}</small>}
+        </span>
+        {inPlan > 0 && <span className="pill">{inPlan === 1 ? 'In plan' : `${inPlan}× in plan`}</span>}
+      </button>
+      <button className="picker-plus-btn" onClick={onAdd} aria-label={`Add ${drill.name}`} title={`Add ${drill.name}`}>
         +
-      </span>
-    </button>
+      </button>
+      {open && <p className="slot-description">{drill.description || 'No description yet.'}</p>}
+    </div>
   )
 }
 
