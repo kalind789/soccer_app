@@ -42,8 +42,8 @@ function LoggedInOnly() {
       <header className="site-header">
         <div className="site-header-inner">
           <NavLink to="/teams" className="brand">
-            <span className="brand-mark">⚽</span>
-            <span className="brand-name">Practice Planner</span>
+            <img src="/favicon.svg" alt="" className="brand-mark" width={28} height={28} />
+            <span className="brand-name">Drillboard</span>
           </NavLink>
           <div className="header-right">
             <nav className="nav">

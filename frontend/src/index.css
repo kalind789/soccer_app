@@ -329,12 +329,10 @@ input.search {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--primary-soft);
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
 }
 
 .nav {
