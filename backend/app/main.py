@@ -7,7 +7,7 @@ from app.routers import drills, invites, session_plans, teams
 from app.settings import FRONTEND_ORIGIN
 
 # Tables are created and changed by Alembic migrations: run `uv run alembic upgrade head`.
-app = FastAPI(title="Practice Planner")
+app = FastAPI(title="Drillboard")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_ORIGIN],
